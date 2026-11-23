@@ -1,0 +1,2461 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Urine Bag SimLab — Multiparameter Clinical Monitoring System</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        medical: {
+                            950: '#060d18',
+                            900: '#0b1628',
+                            800: '#11223d',
+                            700: '#1a3358',
+                            teal: '#0d9488',
+                            cyan: '#06b6d4',
+                            copper: '#d97706',
+                            copperLight: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Kustomisasi Scrollbar & Animasi Halus */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #06b6d4;
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: #06b6d4;
+            border: 3px solid #0f172a;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 0 0 10px rgba(6, 182, 212, 0.6);
+            transition: transform 0.15s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 6px;
+            cursor: pointer;
+            background: #1e293b;
+            border-radius: 999px;
+        }
+
+        /* pH Spectrum Gradient Track */
+        input[type=range].ph-slider::-webkit-slider-runnable-track {
+            background: linear-gradient(to right, #ef4444 0%, #f97316 25%, #eab308 45%, #22c55e 60%, #06b6d4 80%, #6366f1 100%);
+            height: 7px;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-cyan-500/30 selection:text-cyan-200 min-h-screen flex flex-col">
+
+    <!-- Header / Top Navbar -->
+    <header class="sticky top-0 z-40 bg-slate-900/95 backdrop-blur-md border-b border-slate-800 px-4 py-3 shadow-lg">
+        <div class="max-w-[1440px] mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <i data-lucide="activity" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">
+                            Smart Urine Bag <span class="text-cyan-400">SimLab</span>
+                            <span class="text-xs font-semibold text-teal-300 ml-1">— Multiparameter Clinical Monitoring</span>
+                        </h1>
+                        <span class="hidden md:inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/30">
+                            Bhat dkk. (2025) + Urinalisis IoT
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-400">Sensor Kapasitif Broad-Side Coupled, Biomekanika Kantong, Kualitas Fisik-Kimia Urine & Monitor Perawat</p>
+                </div>
+            </div>
+
+            <!-- Global Urgency Status & Info Modal Button -->
+            <div class="flex items-center gap-2.5">
+                <div id="globalTriageBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-xs font-semibold text-emerald-300 transition-all">
+                    <span id="globalTriageDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                    <span id="globalTriageText">URGENSI HIJAU: Dalam Batas Pemantauan</span>
+                </div>
+                <button id="btnInfoModal" class="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition">
+                    <i data-lucide="book-open" class="w-4 h-4 text-cyan-400"></i>
+                    <span>Prinsip Sensor & Referensi</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Disclaimer Edukasi Klinis -->
+    <div class="bg-amber-950/30 border-b border-amber-500/20 px-4 py-2">
+        <div class="max-w-[1440px] mx-auto flex items-center justify-between gap-2 text-[11px] text-amber-200/90">
+            <div class="flex items-center gap-2">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                <span><strong>Disclaimer Edukasi Keperawatan & Biomedis:</strong> Aplikasi ini adalah simulasi pembelajaran interaktif berbasis model fisiologis & rekayasa sensor, <strong>bukan alat diagnosis medis</strong> maupun pengganti pemeriksaan laboratorium urinalisis klinis.</span>
+            </div>
+            <span class="hidden lg:inline font-mono text-amber-400/80">Target Diuresis Dewasa: ≥ 0.5 mL/kgBB/jam</span>
+        </div>
+    </div>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-[1440px] w-full mx-auto p-3 sm:p-5 space-y-5">
+
+        <!-- BARIS 1: 8 SKENARIO KLINIS PRESET (C. SIMULASI KONDISI URINE) -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="stethoscope" class="w-4 h-4 text-cyan-400"></i>
+                    <h2 class="text-xs sm:text-sm font-bold text-white uppercase tracking-wider">Simulasi Kondisi Klinis (8 Preset Interaktif — Tetap Dapat Diubah Manual)</h2>
+                </div>
+                <span id="activePresetLabel" class="text-[11px] font-mono text-cyan-300 bg-cyan-950/60 px-2.5 py-0.5 rounded-lg border border-cyan-500/30">
+                    Skenario Aktif: 1. Normal
+                </span>
+            </div>
+            <div id="presetButtonsContainer" class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2">
+                <!-- Diisi dinamis oleh JS -->
+            </div>
+        </section>
+
+        <!-- BARIS 2: PARAMETER PASIEN, VOLUME & KONTROL ALIRAN (B. PENGEMBANGAN SISTEM MONITORING VOLUME) -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 items-center">
+                
+                <!-- Input Berat Badan (kgBB) & Durasi Observasi -->
+                <div class="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800">
+                    <!-- Berat Badan Pasien -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <label for="weightInput" class="font-medium text-slate-300 flex items-center gap-1.5">
+                                <i data-lucide="user" class="w-3.5 h-3.5 text-teal-400"></i>
+                                Berat Badan (BB):
+                            </label>
+                            <span class="font-mono font-bold text-teal-300"><span id="weightDisplay">60</span> kg</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="range" id="weightSlider" min="30" max="150" value="60" step="1" class="flex-1">
+                            <input type="number" id="weightInput" min="30" max="150" value="60" class="w-16 bg-slate-800 border border-slate-700 rounded-lg px-2 py-1 text-xs font-mono text-center text-white focus:outline-none focus:border-cyan-500">
+                        </div>
+                        <div class="text-[10px] text-slate-400 font-mono">
+                            Ambang Oliguria: <span id="oliguriaThresholdDisplay" class="text-rose-300 font-semibold">30.0 mL/jam</span>
+                        </div>
+                    </div>
+
+                    <!-- Durasi Observasi -->
+                    <div class="space-y-1.5">
+                        <div class="flex items-center justify-between text-xs">
+                            <label for="durationSelect" class="font-medium text-slate-300 flex items-center gap-1.5">
+                                <i data-lucide="clock" class="w-3.5 h-3.5 text-amber-400"></i>
+                                Durasi Observasi:
+                            </label>
+                            <span id="durationDisplay" class="font-mono font-bold text-amber-300">4.0 jam</span>
+                        </div>
+                        <select id="durationSelect" class="w-full bg-slate-800 border border-slate-700 text-slate-200 text-xs rounded-xl px-2.5 py-2 focus:outline-none focus:border-cyan-500 cursor-pointer">
+                            <option value="1">1 Jam Observasi</option>
+                            <option value="2">2 Jam Observasi</option>
+                            <option value="4" selected>4 Jam Observasi</option>
+                            <option value="6">6 Jam Observasi</option>
+                            <option value="12">12 Jam Observasi</option>
+                            <option value="24">24 Jam Observasi</option>
+                        </select>
+                        <div class="text-[10px] text-slate-400 font-mono">
+                            Target Min: <span id="minTargetVolDisplay" class="text-emerald-300 font-semibold">120 mL</span> / <span id="targetDurLabel">4j</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slider Volume Real-Time -->
+                <div class="lg:col-span-4 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <label for="volumeSlider" class="text-xs sm:text-sm font-semibold text-slate-200 flex items-center gap-1.5">
+                            <i data-lucide="droplets" class="w-4 h-4 text-cyan-400"></i>
+                            Volume Kantong:
+                            <span id="volumeDisplay" class="font-mono text-base font-bold text-cyan-400 bg-cyan-950/60 px-2 py-0.5 rounded-lg border border-cyan-500/30">240 mL</span>
+                            <span id="percentDisplay" class="text-xs font-mono text-slate-400">(24%)</span>
+                        </label>
+                        <span id="timeToFullBadge" class="text-[11px] font-mono text-slate-300 bg-slate-800 px-2 py-0.5 rounded-lg border border-slate-700">
+                            Penuh: ~12j 40m
+                        </span>
+                    </div>
+                    <input type="range" id="volumeSlider" min="0" max="1000" value="240" step="5" class="w-full">
+                    <div class="flex justify-between text-[10px] font-mono text-slate-500 px-0.5">
+                        <span>0 mL</span>
+                        <span>250 mL</span>
+                        <span>500 mL</span>
+                        <span class="text-amber-400">800 mL (80%)</span>
+                        <span class="text-rose-400">900 mL (90%)</span>
+                        <span>1000 mL</span>
+                    </div>
+                </div>
+
+                <!-- Kontrol Dinamika Aliran, Goyangan & Siklus -->
+                <div class="lg:col-span-3 flex flex-wrap lg:flex-col gap-2">
+                    <div class="flex items-center gap-2 w-full">
+                        <button id="btnAutoFill" class="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-teal-600 hover:bg-teal-500 text-white shadow-lg shadow-teal-600/20 transition">
+                            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+                            <span id="autoFillText">Simulasi Aliran</span>
+                        </button>
+                        <button id="btnReset" class="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/30 transition" title="Kosongkan Kantong Urine">
+                            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                            <span>Kosongkan</span>
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-2 w-full">
+                        <button id="btnKinkTube" class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-medium bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition">
+                            <span id="kinkIndicator" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <span id="kinkText">Selang: Lancar</span>
+                        </button>
+                        <button id="btnSway" class="flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-medium bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition">
+                            <span id="swayIndicator" class="w-2 h-2 rounded-full bg-slate-500"></span>
+                            <span id="swayText">Goyangan: OFF</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Baris Metrik Kalkulasi Output Klinis Real-Time -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-3 border-t border-slate-800/80">
+                <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-400">Volume Terkini</div>
+                    <div id="metricVol" class="font-mono text-sm sm:text-base font-bold text-cyan-400">240 mL</div>
+                </div>
+                <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-400">Laju Produksi</div>
+                    <div id="metricRate" class="font-mono text-sm sm:text-base font-bold text-teal-300">60.0 mL/jam</div>
+                </div>
+                <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-400">Output / kgBB / jam</div>
+                    <div id="metricKgRate" class="font-mono text-sm sm:text-base font-bold text-emerald-400">1.00 mL/kg/j</div>
+                </div>
+                <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-400">Klasifikasi Diuresis</div>
+                    <div id="metricDiuresisClass" class="text-xs sm:text-sm font-bold text-emerald-300 mt-0.5">Normal (≥0.5)</div>
+                </div>
+                <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-400">Estimasi Kantong 80%</div>
+                    <div id="metricEst80" class="font-mono text-xs sm:text-sm font-bold text-amber-300 mt-0.5">9j 20m lagi</div>
+                </div>
+                <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
+                    <div class="text-[10px] text-slate-400">Estimasi Penuh (100%)</div>
+                    <div id="metricEst100" class="font-mono text-xs sm:text-sm font-bold text-slate-200 mt-0.5">12j 40m lagi</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- BARIS 3: VISUALISASI 2.5D BIOMEKANIKA & SENSOR KAPASITIF + DASHBOARD ANDROID PERAWAT -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+            <!-- KOLOM KIRI (7 Kolom): Kanvas 2.5D Kantong Urine + Penampang Samping Biomekanika + 5 Sensor Kapasitif -->
+            <div class="lg:col-span-7 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 flex flex-col justify-between shadow-xl space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h2 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="layers" class="w-4 h-4 text-amber-400"></i>
+                            Visualisasi 2.5D Smart Urine Bag & Biomekanika Deformasi (d₂)
+                        </h2>
+                        <p class="text-xs text-slate-400">Memisahkan Sensor Kapasitif Level (Eksternal) dengan Modul Sensor Optik, pH, SG & Dipstick (Inline Chamber)</p>
+                    </div>
+                    <!-- Tab View Mode -->
+                    <div class="flex items-center bg-slate-800 p-1 rounded-xl border border-slate-700 text-xs">
+                        <button id="viewFrontBtn" class="px-2.5 py-1 rounded-lg font-medium bg-cyan-600 text-white transition">Depan + Belakang</button>
+                        <button id="viewBackBtn" class="px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition">Fokus 5 Sensor</button>
+                    </div>
+                </div>
+
+                <!-- Responsive Canvas Wrapper -->
+                <div id="bagCanvasContainer" class="relative w-full h-[400px] sm:h-[430px] bg-slate-950 rounded-xl border border-slate-800/80 overflow-hidden">
+                    <canvas id="bagCanvas" class="w-full h-full block"></canvas>
+                    
+                    <!-- Overlay Legend Biomekanika -->
+                    <div class="absolute bottom-2.5 left-2.5 right-2.5 flex flex-wrap items-center justify-between gap-2 bg-slate-900/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px]">
+                        <div class="flex flex-wrap items-center gap-3">
+                            <span class="flex items-center gap-1.5 text-amber-400 font-medium">
+                                <span class="w-3 h-2 bg-amber-500 rounded-xs inline-block"></span>
+                                Ref Cu: 18.5×1.2 cm
+                            </span>
+                            <span class="flex items-center gap-1.5 text-cyan-300 font-medium">
+                                <span class="w-3 h-2 bg-cyan-500 rounded-xs inline-block"></span>
+                                5 Sensor: 3×1.2 cm (Δ0.9 cm)
+                            </span>
+                            <span class="flex items-center gap-1.5 text-teal-300 font-medium">
+                                <span class="w-2.5 h-2.5 rounded-full border border-teal-400 bg-teal-500/30 inline-block"></span>
+                                Inline Optical/Chem Chamber
+                            </span>
+                        </div>
+                        <div class="font-mono text-cyan-300">
+                            Jarak Pelat d₂: <span id="d2Readout" class="font-bold">8.2 mm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Penjelasan Dinamis Biomekanika Saat Ini -->
+                <div class="p-3 rounded-xl bg-slate-800/60 border border-slate-700/70 text-xs text-slate-300 leading-relaxed flex items-start gap-2.5">
+                    <i data-lucide="info" class="w-4 h-4 text-cyan-400 shrink-0 mt-0.5"></i>
+                    <div id="biomechText">
+                        <strong>Fase Pengisian Awal (240 mL):</strong> Cairan mulai menutupi Sensor 1 & 2. Karena konstanta dielektrik cairan jauh lebih tinggi daripada udara, kapasitansi melonjak tajam.
+                    </div>
+                </div>
+
+                <!-- Susunan 5 Elektroda Kapasitif (Dipertahankan) -->
+                <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-3">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                            <i data-lucide="cpu" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            Status 5 Elektroda Kapasitif Level (Broad-Side Coupled)
+                        </span>
+                        <div class="flex items-center gap-3 text-[11px] font-mono">
+                            <span class="text-amber-400">C: <strong id="capValue">41.2 pF</strong></span>
+                            <span class="text-cyan-400">ADC: <strong id="voltValue">1.45 V</strong></span>
+                            <span class="text-emerald-400">Level: <strong id="estVolValue">~200–400 mL</strong></span>
+                        </div>
+                    </div>
+                    <div id="sensorBarsContainer" class="grid grid-cols-1 sm:grid-cols-5 gap-1.5">
+                        <!-- Diisi secara dinamis oleh JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- KOLOM KANAN (5 Kolom): E. DASHBOARD ANDROID PERAWAT & D. SISTEM ALARM TRIAGE -->
+            <div class="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2.5">
+                    <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                        <i data-lucide="smartphone" class="w-4 h-4 text-emerald-400"></i>
+                        Dashboard Android Perawat (Bedside Monitor)
+                    </h3>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2.5 py-0.5 rounded-full border border-emerald-500/30">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                        Wi-Fi + AES-256
+                    </span>
+                </div>
+
+                <!-- Mockup Frame Monitor Android Rumah Sakit -->
+                <div class="flex-1 bg-slate-950 border-2 border-slate-800 rounded-2xl p-3.5 space-y-3 flex flex-col justify-between">
+                    
+                    <!-- Header Identitas Pasien & Ruangan -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono bg-slate-900/90 px-3 py-2 rounded-xl border border-slate-800">
+                        <div class="flex items-center gap-2">
+                            <span class="px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-bold">ICU-BED 03</span>
+                            <span class="text-slate-200 font-semibold">ID: PT-2026-084</span>
+                        </div>
+                        <span class="text-amber-400 flex items-center gap-1">
+                            <i data-lucide="key-round" class="w-3 h-3"></i>
+                            OTP: <strong id="otpCode">849201</strong>
+                        </span>
+                    </div>
+
+                    <!-- Banner Sistem Alarm & Tingkat Urgensi (Hijau / Kuning / Merah) -->
+                    <div id="clinicalAlertBox" class="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 flex items-start gap-2.5 transition-all duration-300">
+                        <i id="clinicalAlertIcon" data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0 mt-0.5"></i>
+                        <div class="flex-1">
+                            <div class="flex items-center justify-between gap-1">
+                                <span id="clinicalAlertTitle" class="text-xs font-bold text-emerald-300">HIJAU: Kondisi Dalam Batas Pemantauan</span>
+                                <span id="alarmCountBadge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-300">0 Peringatan</span>
+                            </div>
+                            <p id="clinicalAlertDesc" class="text-[11px] text-slate-300 mt-0.5">Diuresis adekuat, aliran selang lancar, dan karakteristik fisik-kimia urine dalam batas pemantauan.</p>
+                        </div>
+                    </div>
+
+                    <!-- Grid Parameter Vital Urine pada Monitor Perawat -->
+                    <div class="grid grid-cols-3 gap-2 text-xs">
+                        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block">Volume / Jam</span>
+                            <span id="appVolRate" class="font-mono font-bold text-cyan-400">240mL | 60/j</span>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block">Output / kgBB</span>
+                            <span id="appKgRate" class="font-mono font-bold text-emerald-400">1.00 mL/kg/j</span>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block">Warna Optik</span>
+                            <div class="flex items-center gap-1.5 mt-0.5">
+                                <span id="appColorDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 border border-white/40"></span>
+                                <span id="appColorText" class="font-semibold text-[11px] text-slate-200 truncate">Kuning Normal</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block">pH Urine</span>
+                            <span id="appPhText" class="font-mono font-bold text-teal-300">6.2 (Asam)</span>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block">Kekeruhan</span>
+                            <span id="appTurbidityText" class="font-semibold text-[11px] text-slate-200">Clear (Jernih)</span>
+                        </div>
+                        <div class="bg-slate-900/90 p-2 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block">Specific Gravity</span>
+                            <span id="appSgText" class="font-mono font-bold text-amber-300">1.015</span>
+                        </div>
+                    </div>
+
+                    <!-- Ringkasan Dipstick Kimia pada App Perawat -->
+                    <div class="bg-slate-900/90 px-2.5 py-2 rounded-xl border border-slate-800 flex items-center justify-between text-[11px]">
+                        <span class="text-slate-400 font-medium">Kimia Dipstick:</span>
+                        <span id="appDipstickSummary" class="font-mono font-semibold text-emerald-400">Semua Negatif (Normal)</span>
+                    </div>
+
+                    <!-- Grafik Tren Pemantauan Interval (1j, 2j, 4j, 6j) -->
+                    <div class="bg-slate-900/70 p-2.5 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-semibold text-slate-300 flex items-center gap-1">
+                                <i data-lucide="bar-chart-2" class="w-3.5 h-3.5 text-cyan-400"></i>
+                                Tren Output Urine per Interval
+                            </span>
+                            <div class="flex items-center gap-1 text-[10px] font-mono">
+                                <button class="interval-btn px-1.5 py-0.5 rounded bg-cyan-600 text-white" data-int="1">1j</button>
+                                <button class="interval-btn px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white" data-int="2">2j</button>
+                                <button class="interval-btn px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white" data-int="4">4j</button>
+                                <button class="interval-btn px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white" data-int="6">6j</button>
+                            </div>
+                        </div>
+                        <div class="w-full h-[95px]">
+                            <canvas id="trendCanvas" class="w-full h-full block"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat Alarm & Log Notifikasi Real-Time -->
+                    <div class="bg-slate-900/90 p-2.5 rounded-xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                <i data-lucide="bell" class="w-3 h-3 text-amber-400"></i>
+                                Riwayat Alarm & Notifikasi Klinis
+                            </span>
+                            <button id="btnClearLog" class="text-[10px] text-slate-500 hover:text-slate-300">Bersihkan</button>
+                        </div>
+                        <div id="alarmLogList" class="max-h-[76px] overflow-y-auto space-y-1 text-[10px] font-mono pr-1">
+                            <!-- Log dinamis -->
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <!-- BARIS 4: PANEL BARU — URINE QUALITY & CHEMICAL ANALYSIS (A. 5 SENSOR KARAKTERISTIK URINE) -->
+        <section class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xl space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i data-lucide="flask-conical" class="w-5 h-5 text-teal-400"></i>
+                        Urine Quality & Chemical Analysis (Modul Sensor Optik, Elektrokimia & Dipstick)
+                    </h2>
+                    <p class="text-xs text-slate-400">Setiap sensor bekerja terpisah dari sensor kapasitif level dengan prinsip optik/elektrokimia tersendiri untuk evaluasi klinis keperawatan.</p>
+                </div>
+                <span class="text-[11px] font-mono px-2.5 py-1 rounded-lg bg-teal-950/60 text-teal-300 border border-teal-500/30">
+                    Multi-Sensor Flow Cell Terintegrasi
+                </span>
+            </div>
+
+            <!-- Grid 4 Sensor Fisik (Color, pH, Turbidity, Specific Gravity) -->
+            <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+
+                <!-- 1. OPTICAL URINE COLOR SENSOR -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="eye" class="w-4 h-4 text-amber-400"></i>
+                                1. Optical Urine Color Sensor
+                            </h3>
+                            <span id="colorUrgencyBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Normal</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2.5">Prinsip: Spektrofotometri transmisi RGB LED melalui sel aliran urine.</p>
+
+                        <!-- 7 Pilihan Warna Urine -->
+                        <div id="colorOptionsGrid" class="grid grid-cols-7 gap-1.5 mb-2.5">
+                            <!-- Diisi dinamis oleh JS -->
+                        </div>
+
+                        <div class="flex items-center justify-between bg-slate-900 px-2.5 py-1.5 rounded-lg border border-slate-800 text-xs">
+                            <span class="text-slate-400">Terdeteksi:</span>
+                            <span id="colorDetectedName" class="font-bold text-yellow-300">Kuning Normal</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 text-[11px] bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <div><span class="text-slate-400">Status Visual:</span> <span id="colorVisualStatus" class="text-slate-200 font-medium">Hidrasi seimbang (Urokrom normal)</span></div>
+                        <div><span class="text-slate-400">Kemungkinan Penyebab:</span> <span id="colorCauseText" class="text-slate-300">Asupan cairan adekuat dan fungsi ekskresi pigmen normal.</span></div>
+                        <p class="text-[10px] text-amber-300/80 italic pt-1 border-t border-slate-800">*Warna saja tidak dapat menegakkan diagnosis; evaluasi bersama SG, dipstick & riwayat obat/diet.</p>
+                    </div>
+                </div>
+
+                <!-- 2. URINE pH SENSOR -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="gauge" class="w-4 h-4 text-teal-400"></i>
+                                2. Urine pH Sensor
+                            </h3>
+                            <span id="phCategoryBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/20 text-teal-300 border border-teal-500/30">Asam Fisiologis</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2.5">Prinsip: Elektroda elektrokimia ISFET (Ion-Sensitive Field-Effect Transistor).</p>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-slate-300">Nilai pH Aktual:</span>
+                            <span id="phValueDisplay" class="font-mono text-base font-bold text-teal-300">6.2</span>
+                        </div>
+                        <input type="range" id="phSlider" min="4.0" max="9.0" value="6.2" step="0.1" class="w-full ph-slider">
+                        <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+                            <span>4.0 (Asam)</span>
+                            <span class="text-emerald-400">[Umum: 4.5–8.0]</span>
+                            <span>9.0 (Basa)</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 text-[11px] bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <div><span class="text-slate-400">Klasifikasi:</span> <span id="phClassText" class="text-slate-200 font-medium">Asam Ringan (Rentang Umum 4.5–8.0)</span></div>
+                        <div><span class="text-slate-400">Interpretasi Klinis:</span> <span id="phInterpretText" class="text-slate-300">pH urine normal cenderung sedikit asam akibat ekskresi ion hidrogen metabolik.</span></div>
+                    </div>
+                </div>
+
+                <!-- 3. TURBIDITY SENSOR -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="cloud-fog" class="w-4 h-4 text-cyan-400"></i>
+                                3. Turbidity Sensor (Kekeruhan)
+                            </h3>
+                            <span id="turbidityBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Clear</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2.5">Prinsip: Sensor optik nefelometri hamburan cahaya 90° (mengubah opasitas cairan).</p>
+
+                        <!-- 4 Kondisi Kekeruhan -->
+                        <div id="turbidityButtons" class="grid grid-cols-2 gap-1.5">
+                            <button data-turb="clear" class="turb-btn px-2 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white border border-cyan-400 transition">Clear (Jernih)</button>
+                            <button data-turb="slightly" class="turb-btn px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-700 hover:border-slate-500 transition">Slightly Cloudy</button>
+                            <button data-turb="cloudy" class="turb-btn px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-700 hover:border-slate-500 transition">Cloudy (Keruh)</button>
+                            <button data-turb="highly" class="turb-btn px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-700 hover:border-slate-500 transition">Highly Cloudy</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 text-[11px] bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <div><span class="text-slate-400">Transparansi & NTU:</span> <span id="turbidityNtuText" class="text-cyan-300 font-mono font-medium">Jernih (~5 NTU | Transmisi 96%)</span></div>
+                        <div id="turbidityInterpretText" class="text-slate-300">Urine segar normal tampak jernih dan transparan.</div>
+                        <p class="text-[10px] text-amber-300/80 italic pt-1 border-t border-slate-800">*Kekeruhan bersifat multifaktorial (kristal fosfat/urat, mukus, leukosit, bakteri) dan memerlukan pemeriksaan mikroskopis/lanjutan.</p>
+                    </div>
+                </div>
+
+                <!-- 4. SPECIFIC GRAVITY SENSOR -->
+                <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 flex flex-col justify-between space-y-3">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <h3 class="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
+                                <i data-lucide="scale" class="w-4 h-4 text-purple-400"></i>
+                                4. Specific Gravity Sensor
+                            </h3>
+                            <span id="sgCategoryBadge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">Rentang Umum</span>
+                        </div>
+                        <p class="text-[10px] text-slate-400 mb-2.5">Prinsip: Indeks bias optik digital (refraktometri) — terpisah dari sensor kapasitif level.</p>
+
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-xs text-slate-300">Berat Jenis (SG):</span>
+                            <span id="sgValueDisplay" class="font-mono text-base font-bold text-purple-300">1.015</span>
+                        </div>
+                        <input type="range" id="sgSlider" min="1.000" max="1.040" value="1.015" step="0.001" class="w-full">
+                        <div class="flex justify-between text-[10px] font-mono text-slate-400 mt-1">
+                            <span>1.000 (Encer)</span>
+                            <span>1.010–1.025</span>
+                            <span>1.040 (Pekat)</span>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5 text-[11px] bg-slate-900/60 p-2.5 rounded-lg border border-slate-800/80">
+                        <div><span class="text-slate-400">Kategori Konsentrasi:</span> <span id="sgClassText" class="text-slate-200 font-medium">Rentang Umum (1.010–1.025)</span></div>
+                        <div><span class="text-slate-400">Interpretasi:</span> <span id="sgInterpretText" class="text-slate-300">Kemampuan pemekatan dan pengenceran tubulus ginjal berada dalam rentang fisiologis normal.</span></div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- 5. URINE CHEMICAL ANALYZER (MINI LAB DIPSTICK TABLE) -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                        <h3 class="text-xs sm:text-sm font-bold text-white flex items-center gap-2">
+                            <i data-lucide="test-tubes" class="w-4 h-4 text-rose-400"></i>
+                            5. Urine Chemical Analyzer (Simulasi Urinalisis Dipstick Fotometri Reflektansi)
+                        </h3>
+                        <p class="text-[11px] text-slate-400">Klik tombol status (Negatif / Trace / Positif) pada setiap parameter untuk mensimulasikan pembacaan strip reagen kimia.</p>
+                    </div>
+                    <div id="dipstickAdvisoryBanner" class="hidden items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-950/60 border border-amber-500/40 text-[11px] text-amber-200">
+                        <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0"></i>
+                        <span>Hasil Trace/Positif terdeteksi: <strong>Diperlukan pemeriksaan laboratorium lanjutan</strong> (bukan diagnosis langsung).</span>
+                    </div>
+                </div>
+
+                <!-- Tabel Laboratorium Mini -->
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-[11px] font-mono text-slate-400 uppercase">
+                                <th class="py-2 px-3">Parameter Kimia</th>
+                                <th class="py-2 px-3">Pad Reagen</th>
+                                <th class="py-2 px-3">Kontrol Hasil Dipstick</th>
+                                <th class="py-2 px-3">Nilai Semi-Kuantitatif</th>
+                                <th class="py-2 px-3">Interpretasi Klinis & Tindak Lanjut</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dipstickTableBody" class="divide-y divide-slate-800/70">
+                            <!-- Diisi dinamis oleh JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- BARIS 5: ARSITEKTUR SINYAL 100 kHz + ENKRIPSI AES-256 & GRAFIK KURVA NON-LINEAR -->
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+            <!-- KOLOM KIRI (6 Kolom): Animasi Aliran Sinyal & Pipeline Keamanan AES-256 -->
+            <div class="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-3">
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+                            Arsitektur Sinyal 100 kHz & Enkripsi Dinamis AES-256
+                        </h3>
+                        <p class="text-xs text-slate-400">Eksitasi Gelombang Persegi → ADC ESP8266 → Kunci Dinamis ID Pasien → Server Lokal</p>
+                    </div>
+                </div>
+
+                <!-- Kanvas Animasi Aliran Sinyal & Paket Terenkripsi -->
+                <div id="signalCanvasContainer" class="w-full h-[200px] bg-slate-950 rounded-xl border border-slate-800/80 overflow-hidden mb-3">
+                    <canvas id="signalCanvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <!-- Live Ciphertext / Payload Inspector -->
+                <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 font-mono text-[11px] space-y-1.5">
+                    <div class="flex items-center justify-between text-slate-400">
+                        <span class="flex items-center gap-1.5 text-cyan-400 font-semibold">
+                            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                            Paket Multiparameter Terenkripsi (ESP8266 → Server Lokal)
+                        </span>
+                        <span id="packetCounter" class="text-slate-500">PKT #1024</span>
+                    </div>
+                    <div class="text-slate-400 truncate">
+                        <span class="text-slate-500">Plaintext:</span> 
+                        <span id="rawPayload" class="text-emerald-300">{"id":"PT-2026-084","vol":240,"ph":6.2,"sg":1.015}</span>
+                    </div>
+                    <div class="text-slate-400 break-all leading-tight">
+                        <span class="text-slate-500">AES-256 Cipher:</span> 
+                        <span id="cipherPayload" class="text-amber-300/90">9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KOLOM KANAN (6 Kolom): Grafik Real-Time Kurva Non-Linear Biomekanika -->
+            <div class="lg:col-span-6 bg-slate-900/90 border border-slate-800 rounded-2xl p-4 shadow-xl flex flex-col justify-between">
+                <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                    <div>
+                        <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                            <i data-lucide="trending-up" class="w-4 h-4 text-cyan-400"></i>
+                            Kurva Karakteristik Non-Linear (Volume vs Tegangan Kapasitif)
+                        </h3>
+                        <p class="text-xs text-slate-400">Memperlihatkan efek kenaikan dielektrik (εr) vs pelebaran jarak pelat (d₂) saat kantong menggembung</p>
+                    </div>
+                    <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700">
+                        r = 0.9986 (Bhat dkk.)
+                    </span>
+                </div>
+
+                <!-- Kanvas Grafik Kurva -->
+                <div id="chartCanvasContainer" class="w-full h-[200px] bg-slate-950 rounded-xl border border-slate-800/80 overflow-hidden mb-3">
+                    <canvas id="chartCanvas" class="w-full h-full block"></canvas>
+                </div>
+
+                <!-- Catatan Kritis dari Esai -->
+                <div class="bg-amber-950/20 border border-amber-500/25 rounded-xl p-3 text-xs text-slate-300 flex items-start gap-2.5">
+                    <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+                    <div>
+                        <strong class="text-amber-300">Pemisahan Modalitas Sensor:</strong> Kurva di atas khusus mengukur <em>ketinggian/volume cairan</em> melalui perubahan dielektrik & jarak pelat (d₂), sedangkan warna, kekeruhan, pH, berat jenis, dan dipstick diukur oleh modul optik & elektrokimia terpisah.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/80 bg-slate-900/60 py-3 px-4 text-center text-xs text-slate-400 space-y-1">
+        <div><strong>Smart Urine Bag SimLab — Multiparameter Clinical Monitoring System</strong> • Pembelajaran Keperawatan & Instrumentasi Biomedis</div>
+        <div class="text-[11px] text-slate-500">Simulasi edukasi berbasis studi <em>Bhat dkk. (2025), Scientific Reports 15, 40208</em> dan standar pemantauan diuresis klinis. Bukan perangkat diagnostik medis.</div>
+    </footer>
+
+    <!-- Modal Penjelasan Konsep & Prinsip Sensor -->
+    <div id="infoModal" class="fixed inset-0 z-50 hidden bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl">
+            <div class="flex items-center justify-between p-4 border-b border-slate-800">
+                <h3 class="text-base font-bold text-white flex items-center gap-2">
+                    <i data-lucide="book-open" class="w-5 h-5 text-cyan-400"></i>
+                    Arsitektur Multiparameter & Prinsip Setiap Sensor
+                </h3>
+                <button id="closeModalBtn" class="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-4 h-4"></i>
+                </button>
+            </div>
+            <div class="p-5 overflow-y-auto space-y-3.5 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700">
+                    <h4 class="font-bold text-amber-400 mb-1">1. Sensor Level Kapasitif Broad-Side Coupled (Bhat dkk., 2025)</h4>
+                    <p>Menggunakan pita tembaga referensi (18,5 × 1,2 cm) di depan dan 5 elektroda sensor (3 × 1,2 cm, jarak 0,9 cm) di belakang dengan sinyal gelombang persegi 100 kHz. Mengukur perubahan dielektrik cairan vs udara serta kompensasi penggembungan kantong ($d_2$). <strong>Hanya mengukur volume/level, bukan komposisi kimia.</strong></p>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700">
+                    <h4 class="font-bold text-cyan-400 mb-1">2. Sensor Optik Warna (RGB Spektrofotometri) & Kekeruhan (Nefelometri 90°)</h4>
+                    <p>Terpasang pada <em>inline optical chamber</em> sebelum cairan masuk ke kantong. Sensor warna mengukur serapan spektrum cahaya untuk mengklasifikasikan 7 warna urine, sedangkan sensor kekeruhan mengukur hamburan cahaya 90° akibat partikel tersuspensi.</p>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700">
+                    <h4 class="font-bold text-teal-400 mb-1">3. Sensor pH (ISFET) & Specific Gravity (Refraktometri Optik)</h4>
+                    <p>Sensor ISFET mendeteksi aktivitas ion hidrogen ($H^+$) untuk menentukan keasaman (rentang fisiologis 4,5–8,0). Modul refraktometri digital mengukur indeks bias cairan untuk mengestimasi berat jenis (1.000–1.040).</p>
+                </div>
+                <div class="p-3 rounded-xl bg-slate-800/70 border border-slate-700">
+                    <h4 class="font-bold text-rose-400 mb-1">4. Urine Chemical Analyzer (Fotometri Reflektansi Dipstick)</h4>
+                    <p>Membaca perubahan warna pada 6 pad reagen kimia (Protein, Glukosa, Keton, Blood, Nitrite, Leukocyte Esterase). Hasil positif berfungsi sebagai skrining awal untuk konfirmasi urinalisis laboratorium.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic untuk Simulasi Multiparameter, Fisika, Biomekanika & Dashboard Perawat -->
+    <script>
+        lucide.createIcons();
+
+        // =========================================================================
+        // 1. DATA REFERENSI KLINIS & PARAMETER SENSOR
+        // =========================================================================
+        const colorProfiles = {
+            transparent: {
+                id: 'transparent',
+                name: 'Transparan / Jernih',
+                swatch: '#e0f2fe',
+                liquidTop: 'rgba(224, 242, 254, 0.45)',
+                liquidBottom: 'rgba(186, 230, 253, 0.58)',
+                urgency: 'yellow',
+                badgeText: 'Perlu Perhatian',
+                status: 'Sangat encer / overhidrasi',
+                cause: 'Asupan cairan berlebih, efek diuretik, atau penurunan kemampuan pemekatan ginjal (mis. diabetes insipidus).',
+                dielectric: 78.3
+            },
+            pale_yellow: {
+                id: 'pale_yellow',
+                name: 'Kuning Pucat',
+                swatch: '#fef08a',
+                liquidTop: 'rgba(254, 240, 138, 0.68)',
+                liquidBottom: 'rgba(253, 224, 71, 0.78)',
+                urgency: 'green',
+                badgeText: 'Normal',
+                status: 'Hidrasi baik (Urokrom encer)',
+                cause: 'Status hidrasi tubuh optimal dengan asupan cairan yang cukup.',
+                dielectric: 77.8
+            },
+            normal_yellow: {
+                id: 'normal_yellow',
+                name: 'Kuning Normal',
+                swatch: '#eab308',
+                liquidTop: 'rgba(234, 179, 8, 0.80)',
+                liquidBottom: 'rgba(202, 138, 4, 0.88)',
+                urgency: 'green',
+                badgeText: 'Normal',
+                status: 'Hidrasi seimbang (Urokrom normal)',
+                cause: 'Asupan cairan adekuat dan fungsi ekskresi pigmen urokrom normal.',
+                dielectric: 76.5
+            },
+            dark_yellow: {
+                id: 'dark_yellow',
+                name: 'Kuning Pekat',
+                swatch: '#d97706',
+                liquidTop: 'rgba(217, 119, 6, 0.88)',
+                liquidBottom: 'rgba(180, 83, 9, 0.94)',
+                urgency: 'yellow',
+                badgeText: 'Perlu Perhatian',
+                status: 'Urine terkonsentrasi / dehidrasi ringan',
+                cause: 'Kurang asupan cairan, kehilangan cairan (demam/keringat), atau konsumsi suplemen vitamin B kompleks.',
+                dielectric: 75.2
+            },
+            amber: {
+                id: 'amber',
+                name: 'Kuning Tua / Amber',
+                swatch: '#b45309',
+                liquidTop: 'rgba(180, 83, 9, 0.92)',
+                liquidBottom: 'rgba(120, 53, 15, 0.96)',
+                urgency: 'yellow',
+                badgeText: 'Evaluasi Hidrasi/Hati',
+                status: 'Sangat pekat / kemungkinan bilirubinuria',
+                cause: 'Dehidrasi signifikan, peningkatan bilirubin terkonjugasi (gangguan hepatobilier), atau obat tertentu.',
+                dielectric: 74.6
+            },
+            reddish: {
+                id: 'reddish',
+                name: 'Kemerahan',
+                swatch: '#dc2626',
+                liquidTop: 'rgba(220, 38, 38, 0.82)',
+                liquidBottom: 'rgba(153, 27, 27, 0.92)',
+                urgency: 'red',
+                badgeText: 'Evaluasi Segera',
+                status: 'Perubahan warna merah (Suspek hematuria)',
+                cause: 'Adanya eritrosit (hematuria), hemoglobinuria, iritasi kateter, infeksi/batu saluran kemih, atau pigmen makanan/obat (rifampisin).',
+                dielectric: 75.8
+            },
+            brownish: {
+                id: 'brownish',
+                name: 'Kecokelatan',
+                swatch: '#78350f',
+                liquidTop: 'rgba(120, 53, 15, 0.90)',
+                liquidBottom: 'rgba(69, 26, 3, 0.96)',
+                urgency: 'red',
+                badgeText: 'Evaluasi Segera',
+                status: 'Warna gelap seperti teh (Perlu evaluasi klinis)',
+                cause: 'Bilirubinuria berat, mioglobinuria (rhabdomyolysis), hematuria lama yang teroksidasi, atau efek obat (metronidazol/nitrofurantoin).',
+                dielectric: 74.8
+            }
+        };
+
+        const turbidityProfiles = {
+            clear: {
+                id: 'clear',
+                label: 'Clear (Jernih)',
+                shortLabel: 'Clear',
+                ntu: '~5 NTU | Transmisi 96%',
+                alphaMultiplier: 0.78,
+                hazeOverlay: 0.0,
+                particles: 0,
+                urgency: 'green',
+                interpret: 'Urine segar normal tampak jernih dan transparan.'
+            },
+            slightly: {
+                id: 'slightly',
+                label: 'Slightly Cloudy',
+                shortLabel: 'Slightly Cloudy',
+                ntu: '~28 NTU | Transmisi 78%',
+                alphaMultiplier: 0.88,
+                hazeOverlay: 0.18,
+                particles: 14,
+                urgency: 'yellow',
+                interpret: 'Sedikit keruh; dapat dipicu mukus ringan, presipitasi kristal urat/fosfat saat suhu turun, atau sel epitel.'
+            },
+            cloudy: {
+                id: 'cloudy',
+                label: 'Cloudy (Keruh)',
+                shortLabel: 'Cloudy',
+                ntu: '~85 NTU | Transmisi 52%',
+                alphaMultiplier: 0.95,
+                hazeOverlay: 0.36,
+                particles: 32,
+                urgency: 'yellow',
+                interpret: 'Kekeruhan nyata; sering berkaitan dengan piuria (leukosit), bakteriuria, atau kristaluria masif.'
+            },
+            highly: {
+                id: 'highly',
+                label: 'Highly Cloudy',
+                shortLabel: 'Highly Cloudy',
+                ntu: '>180 NTU | Transmisi 26%',
+                alphaMultiplier: 1.0,
+                hazeOverlay: 0.55,
+                particles: 55,
+                urgency: 'red',
+                interpret: 'Sangat keruh / opak; perlu evaluasi segera terhadap infeksi saluran kemih berat, piuria, atau debris kateter.'
+            }
+        };
+
+        const dipstickSpecs = [
+            {
+                key: 'protein',
+                name: 'Protein (Albumin)',
+                colors: { negatif: '#d9f99d', trace: '#bef264', positif: '#4d7c0f' },
+                values: { negatif: 'Negatif (<15 mg/dL)', trace: 'Trace (~15–30 mg/dL)', positif: 'Positif +2 (≥100 mg/dL)' },
+                interp: {
+                    negatif: 'Batas fisiologis normal.',
+                    trace: 'Proteinuria ringan/transien (demam, stres, dehidrasi).',
+                    positif: 'Suspek proteinuria bermakna (evaluasi fungsi glomerulus / rasio protein-kreatinin).'
+                }
+            },
+            {
+                key: 'glukosa',
+                name: 'Glukosa',
+                colors: { negatif: '#67e8f9', trace: '#5eead4', positif: '#b45309' },
+                values: { negatif: 'Negatif', trace: 'Trace (~100 mg/dL)', positif: 'Positif +2 (≥500 mg/dL)' },
+                interp: {
+                    negatif: 'Tidak ada glukosuria terdeteksi.',
+                    trace: 'Mendekati ambang reabsorpsi ginjal (~180 mg/dL glukosa darah).',
+                    positif: 'Glukosuria: evaluasi kadar glukosa darah (hiperglikemia) atau gangguan tubulus.'
+                }
+            },
+            {
+                key: 'keton',
+                name: 'Keton (Asam Asetoasetat)',
+                colors: { negatif: '#fde68a', trace: '#f472b6', positif: '#9d174d' },
+                values: { negatif: 'Negatif', trace: 'Trace (~5 mg/dL)', positif: 'Positif +2 (≥40 mg/dL)' },
+                interp: {
+                    negatif: 'Metabolisme karbohidrat normal.',
+                    trace: 'Katabolisme lemak ringan (puasa / asupan kalori rendah).',
+                    positif: 'Ketonuria: evaluasi risiko ketoasidosis diabetikum, puasa lama, atau muntah berat.'
+                }
+            },
+            {
+                key: 'blood',
+                name: 'Blood (Eritrosit / Hb)',
+                colors: { negatif: '#fef08a', trace: '#84cc16', positif: '#065f46' },
+                values: { negatif: 'Negatif', trace: 'Trace (Non-hemolisis)', positif: 'Positif +2 (Hematuria)' },
+                interp: {
+                    negatif: 'Tidak terdeteksi darah samar.',
+                    trace: 'Jejak eritrosit mikroskopis; evaluasi posisi kateter.',
+                    positif: 'Hematuria terdeteksi: perlu pemeriksaan mikroskopis sedimen & evaluasi klinis.'
+                }
+            },
+            {
+                key: 'nitrite',
+                name: 'Nitrite',
+                colors: { negatif: '#fef9c3', trace: '#fbcfe8', positif: '#db2777' },
+                values: { negatif: 'Negatif', trace: 'Trace (Meragukan)', positif: 'Positif (Bakteriuria)' },
+                interp: {
+                    negatif: 'Tidak terdeteksi reduksi nitrat oleh bakteri.',
+                    trace: 'Kontak urine di kandung kemih singkat (<4 jam) atau bakteri rendah.',
+                    positif: 'Indikasi kuat bakteri pereduksi nitrat (mis. E. coli); konfirmasi kultur urine.'
+                }
+            },
+            {
+                key: 'leukocyte',
+                name: 'Leukocyte Esterase',
+                colors: { negatif: '#fef3c7', trace: '#ddd6fe', positif: '#7e22ce' },
+                values: { negatif: 'Negatif', trace: 'Trace (~15 Leu/µL)', positif: 'Positif +2 (≥125 Leu/µL)' },
+                interp: {
+                    negatif: 'Tidak ada tanda piuria.',
+                    trace: 'Peningkatan ringan leukosit; evaluasi gejala lokal.',
+                    positif: 'Piuria (leukosit meningkat): mengarah pada inflamasi / infeksi saluran kemih.'
+                }
+            }
+        ];
+
+        // 8 Preset Skenario Klinis (C. Simulasi Kondisi Urine)
+        const clinicalPresets = [
+            {
+                id: 'normal',
+                title: '1. Normal',
+                sub: 'Kuning jernih, pH 6.2',
+                accent: 'emerald',
+                apply: () => ({
+                    volume: 240, weight: 60, duration: 4,
+                    color: 'normal_yellow', ph: 6.2, turbidity: 'clear', sg: 1.015,
+                    kinked: false,
+                    dipstick: { protein: 'negatif', glukosa: 'negatif', keton: 'negatif', blood: 'negatif', nitrite: 'negatif', leukocyte: 'negatif' }
+                })
+            },
+            {
+                id: 'concentrated',
+                title: '2. Concentrated',
+                sub: 'Kuning pekat, SG 1.030',
+                accent: 'amber',
+                apply: () => ({
+                    volume: 140, weight: 60, duration: 4,
+                    color: 'dark_yellow', ph: 5.5, turbidity: 'slightly', sg: 1.030,
+                    kinked: false,
+                    dipstick: { protein: 'negatif', glukosa: 'negatif', keton: 'trace', blood: 'negatif', nitrite: 'negatif', leukocyte: 'negatif' }
+                })
+            },
+            {
+                id: 'dilute',
+                title: '3. Dilute Urine',
+                sub: 'Kuning pucat, SG 1.004',
+                accent: 'cyan',
+                apply: () => ({
+                    volume: 520, weight: 60, duration: 4,
+                    color: 'pale_yellow', ph: 6.8, turbidity: 'clear', sg: 1.004,
+                    kinked: false,
+                    dipstick: { protein: 'negatif', glukosa: 'negatif', keton: 'negatif', blood: 'negatif', nitrite: 'negatif', leukocyte: 'negatif' }
+                })
+            },
+            {
+                id: 'cloudy',
+                title: '4. Cloudy Urine',
+                sub: 'Keruh, pH 7.6, Leu/Nit (+)',
+                accent: 'amber',
+                apply: () => ({
+                    volume: 210, weight: 60, duration: 4,
+                    color: 'normal_yellow', ph: 7.6, turbidity: 'cloudy', sg: 1.020,
+                    kinked: false,
+                    dipstick: { protein: 'trace', glukosa: 'negatif', keton: 'negatif', blood: 'negatif', nitrite: 'positif', leukocyte: 'positif' }
+                })
+            },
+            {
+                id: 'hematuria',
+                title: '5. Hematuria Sim',
+                sub: 'Kemerahan, Blood (+)',
+                accent: 'rose',
+                apply: () => ({
+                    volume: 260, weight: 60, duration: 4,
+                    color: 'reddish', ph: 6.5, turbidity: 'slightly', sg: 1.018,
+                    kinked: false,
+                    dipstick: { protein: 'trace', glukosa: 'negatif', keton: 'negatif', blood: 'positif', nitrite: 'negatif', leukocyte: 'negatif' }
+                })
+            },
+            {
+                id: 'glucosuria',
+                title: '6. Glucosuria Sim',
+                sub: 'Glukosa (+), SG 1.026',
+                accent: 'amber',
+                apply: () => ({
+                    volume: 420, weight: 60, duration: 4,
+                    color: 'pale_yellow', ph: 5.8, turbidity: 'clear', sg: 1.026,
+                    kinked: false,
+                    dipstick: { protein: 'negatif', glukosa: 'positif', keton: 'trace', blood: 'negatif', nitrite: 'negatif', leukocyte: 'negatif' }
+                })
+            },
+            {
+                id: 'proteinuria',
+                title: '7. Proteinuria Sim',
+                sub: 'Protein (+), Sedikit Keruh',
+                accent: 'amber',
+                apply: () => ({
+                    volume: 200, weight: 60, duration: 4,
+                    color: 'normal_yellow', ph: 6.0, turbidity: 'slightly', sg: 1.022,
+                    kinked: false,
+                    dipstick: { protein: 'positif', glukosa: 'negatif', keton: 'negatif', blood: 'negatif', nitrite: 'negatif', leukocyte: 'negatif' }
+                })
+            },
+            {
+                id: 'low_output',
+                title: '8. Low Output',
+                sub: 'Oliguria <0.5 mL/kg/j',
+                accent: 'rose',
+                apply: () => ({
+                    volume: 85, weight: 65, duration: 4, // 85 / 4 = 21.25 mL/j -> 0.33 mL/kg/j (<0.5)
+                    color: 'amber', ph: 5.4, turbidity: 'slightly', sg: 1.032,
+                    kinked: false,
+                    dipstick: { protein: 'trace', glukosa: 'negatif', keton: 'negatif', blood: 'negatif', nitrite: 'negatif', leukocyte: 'negatif' }
+                })
+            }
+        ];
+
+        // =========================================================================
+        // 2. STATE UTAMA SIMULASI MULTIPARAMETER
+        // =========================================================================
+        const state = {
+            activePreset: 'normal',
+            volume: 240,          // mL (0 - 1000)
+            weight: 60,           // kgBB (30 - 150)
+            duration: 4,          // jam observasi (1, 2, 4, 6, 12, 24)
+            color: 'normal_yellow',
+            ph: 6.2,
+            turbidity: 'clear',
+            sg: 1.015,
+            dipstick: {
+                protein: 'negatif',
+                glukosa: 'negatif',
+                keton: 'negatif',
+                blood: 'negatif',
+                nitrite: 'negatif',
+                leukocyte: 'negatif'
+            },
+            kinked: false,        // Simulasi selang tertekuk / aliran terhambat
+            swayEnabled: false,   // Goyangan mekanis kantong
+            autoFill: false,      // Simulasi aliran masuk kontinu
+            viewMode: 'both',     // 'both' | 'back'
+            trendInterval: 1,     // 1, 2, 4, 6 jam
+            phase: 0,
+            packetCount: 1024,
+            otpCode: '849201',
+            alarmLogs: [],
+            lastAlarmSignature: ''
+        };
+
+        // Posisi ambang 5 elektroda kapasitif (3 cm x 1.2 cm, jarak 0.9 cm)
+        const sensorThresholds = [
+            { id: 1, name: 'S1 (Bawah)', minVol: 40, fullVol: 180 },
+            { id: 2, name: 'S2', minVol: 200, fullVol: 360 },
+            { id: 3, name: 'S3 (Tengah)', minVol: 380, fullVol: 550 },
+            { id: 4, name: 'S4', minVol: 570, fullVol: 750 },
+            { id: 5, name: 'S5 (Puncak)', minVol: 770, fullVol: 930 }
+        ];
+
+        // =========================================================================
+        // 3. MODEL FISIKA, BIOMEKANIKA & EVALUASI KLINIS
+        // =========================================================================
+        function calculateBiomechanics(vol, colorKey, sgVal, swayOffset = 0) {
+            const cProf = colorProfiles[colorKey] || colorProfiles.normal_yellow;
+            const ratio = Math.max(0, Math.min(1, vol / 1000));
+
+            // Jarak antar pelat depan & belakang (d2 dalam mm): 2.0 mm (kosong) -> 28.5 mm (1000 mL)
+            const baseD2 = 2.0 + 26.5 * Math.pow(ratio, 0.82);
+            const d2 = Math.max(1.8, baseD2 + swayOffset * 1.4);
+
+            // Dielektrik efektif dipengaruhi sedikit oleh berat jenis/konsentrasi ionik cairan
+            const effectiveDielectric = cProf.dielectric - (sgVal - 1.015) * 45;
+
+            let totalCap = 12.5;
+            const sensorStates = sensorThresholds.map((s) => {
+                let coverage = 0;
+                if (vol > s.minVol) {
+                    coverage = Math.min(1, (vol - s.minVol) / (s.fullVol - s.minVol));
+                }
+                const bulgingPenalty = vol > s.fullVol ? (1 - 0.14 * ((vol - s.fullVol) / 1000)) : 1;
+                const localCap = coverage * (14.5 * (effectiveDielectric / 78.4)) * bulgingPenalty;
+                totalCap += localCap;
+
+                const boundaryJitter = (coverage > 0 && coverage < 1) ? swayOffset * 0.12 : swayOffset * 0.02;
+                const effectiveCoverage = Math.max(0, Math.min(1, coverage + boundaryJitter));
+
+                return {
+                    ...s,
+                    coverage: effectiveCoverage,
+                    active: effectiveCoverage >= 0.35
+                };
+            });
+
+            const rawVoltage = 0.42 + (totalCap - 12.5) * 0.036;
+            const adcVoltage = Math.max(0.35, Math.min(3.25, rawVoltage));
+
+            const activeCount = sensorStates.filter(s => s.active).length;
+            const ranges = ['< 100 mL', '~100–200 mL', '~200–400 mL', '~400–600 mL', '~600–800 mL', '800–1000 mL'];
+            const estRange = ranges[activeCount] || '< 100 mL';
+
+            return { ratio, d2, totalCap, adcVoltage, sensorStates, activeCount, estRange };
+        }
+
+        function evaluateClinicalStatus() {
+            const rateMlPerHour = state.duration > 0 ? state.volume / state.duration : 0;
+            const rateMlPerKgHour = state.weight > 0 ? rateMlPerHour / state.weight : 0;
+            const oliguriaLimitPerHour = 0.5 * state.weight;
+            const minTargetTotalVol = oliguriaLimitPerHour * state.duration;
+
+            // Estimasi waktu hingga kantong mencapai 80% (800 mL) dan 100% (1000 mL)
+            const effectiveFlow = state.kinked ? 0 : rateMlPerHour;
+            function formatHours(hrs) {
+                if (!isFinite(hrs) || hrs <= 0) return 'Tercapai';
+                if (hrs > 72) return '> 72 jam';
+                const h = Math.floor(hrs);
+                const m = Math.round((hrs - h) * 60);
+                return `${h}j ${String(m).padStart(2, '0')}m lagi`;
+            }
+
+            const est80 = state.volume >= 800 ? 'Tercapai (≥80%)' : (effectiveFlow > 0 ? formatHours((800 - state.volume) / effectiveFlow) : 'Aliran 0 mL/j');
+            const est100 = state.volume >= 1000 ? 'Penuh (100%)' : (effectiveFlow > 0 ? formatHours((1000 - state.volume) / effectiveFlow) : 'Aliran 0 mL/j');
+
+            // Mesin Evaluasi Alarm & Tingkat Urgensi (D. Sistem Alarm dan Notifikasi)
+            const alarms = [];
+            let maxUrgency = 'green'; // 'green' | 'yellow' | 'red'
+            const elevateUrgency = (lvl) => {
+                if (lvl === 'red') maxUrgency = 'red';
+                else if (lvl === 'yellow' && maxUrgency !== 'red') maxUrgency = 'yellow';
+            };
+
+            // 1. Aliran urine berhenti / selang tertekuk
+            if (state.kinked) {
+                elevateUrgency('red');
+                alarms.push({
+                    level: 'red',
+                    title: 'Aliran Urine Terhenti / Selang Tertekuk',
+                    desc: 'Periksa kepatenan selang kateter dari kemungkinan tertekuk, terjepit, atau tersumbat.'
+                });
+            }
+
+            // 2. Kapasitas kantong >= 90% dan >= 80%
+            if (state.volume >= 900) {
+                elevateUrgency('red');
+                alarms.push({
+                    level: 'red',
+                    title: 'Volume Kantong ≥ 90% — Segera Kosongkan Kantong',
+                    desc: `Volume ${state.volume} mL mendekati kapasitas maksimal (1000 mL). Kosongkan segera untuk mencegah refluks.`
+                });
+            } else if (state.volume >= 800) {
+                elevateUrgency('yellow');
+                alarms.push({
+                    level: 'yellow',
+                    title: 'Volume Kantong ≥ 80% — Persiapan Pengosongan',
+                    desc: `Volume mencapai ${state.volume} mL. Siapkan gelas ukur & prosedur pengosongan kantong.`
+                });
+            }
+
+            // 3. Output urine menurun (< 0.5 mL/kgBB/jam)
+            if (rateMlPerKgHour < 0.5) {
+                const isSevere = rateMlPerKgHour < 0.3;
+                elevateUrgency(isSevere ? 'red' : 'yellow');
+                alarms.push({
+                    level: isSevere ? 'red' : 'yellow',
+                    title: `Output Urine Menurun (${rateMlPerKgHour.toFixed(2)} mL/kgBB/jam < 0.5)`,
+                    desc: `Total ${state.volume} mL dalam ${state.duration} jam untuk BB ${state.weight} kg (target min ${Math.round(minTargetTotalVol)} mL). Lakukan evaluasi status hidrasi & perfusi ginjal.`
+                });
+            }
+
+            // 4. Perubahan warna urine signifikan
+            const cProf = colorProfiles[state.color];
+            if (cProf.urgency !== 'green') {
+                elevateUrgency(cProf.urgency);
+                alarms.push({
+                    level: cProf.urgency,
+                    title: `Perubahan Karakteristik Warna: ${cProf.name}`,
+                    desc: `${cProf.status}. Evaluasi riwayat cairan, obat, dan hasil dipstick.`
+                });
+            }
+
+            // 5. Kekeruhan meningkat
+            const tProf = turbidityProfiles[state.turbidity];
+            if (tProf.urgency !== 'green') {
+                elevateUrgency(tProf.urgency);
+                alarms.push({
+                    level: tProf.urgency,
+                    title: `Kekeruhan Urine Meningkat (${tProf.shortLabel})`,
+                    desc: 'Kekeruhan dapat disebabkan kristal, mukus, leukosit, atau bakteri; butuh pemeriksaan lanjutan.'
+                });
+            }
+
+            // 6. Parameter kimia dipstick abnormal
+            const abnormalChems = dipstickSpecs.filter(d => state.dipstick[d.key] !== 'negatif');
+            if (abnormalChems.length > 0) {
+                elevateUrgency('yellow');
+                const names = abnormalChems.map(d => `${d.name.split(' ')[0]} (${state.dipstick[d.key].toUpperCase()})`).join(', ');
+                alarms.push({
+                    level: 'yellow',
+                    title: `Parameter Kimia Abnormal: ${names}`,
+                    desc: 'Temuan skrining dipstick memerlukan konfirmasi pemeriksaan urinalisis laboratorium.'
+                });
+            }
+
+            return {
+                rateMlPerHour,
+                rateMlPerKgHour,
+                oliguriaLimitPerHour,
+                minTargetTotalVol,
+                est80,
+                est100,
+                alarms,
+                maxUrgency,
+                abnormalChems
+            };
+        }
+
+        function addAlarmLog(message, level = 'info') {
+            const now = new Date();
+            const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+            state.alarmLogs.unshift({ time: timeStr, message, level });
+            if (state.alarmLogs.length > 18) state.alarmLogs.pop();
+            renderAlarmLogs();
+        }
+
+        function renderAlarmLogs() {
+            const listEl = document.getElementById('alarmLogList');
+            if (state.alarmLogs.length === 0) {
+                listEl.innerHTML = `<div class="text-slate-500 italic">Belum ada catatan alarm baru. Sistem memantau...</div>`;
+                return;
+            }
+            listEl.innerHTML = state.alarmLogs.map(item => {
+                const colorCls = item.level === 'red' ? 'text-rose-400' : (item.level === 'yellow' ? 'text-amber-300' : 'text-emerald-400');
+                return `<div class="flex items-start gap-1.5 border-b border-slate-800/50 pb-0.5">
+                    <span class="text-slate-500 shrink-0">[${item.time}]</span>
+                    <span class="${colorCls}">${item.message}</span>
+                </div>`;
+            }).join('');
+        }
+
+        function generateSimulatedAES256(vol, volt, pkt) {
+            const seedStr = `PT-2026-084|${vol}|${state.ph}|${state.sg}|${pkt}|${state.otpCode}`;
+            let hex = '';
+            let h1 = 0x811c9dc5;
+            for (let i = 0; i < 64; i++) {
+                const charCode = seedStr.charCodeAt(i % seedStr.length);
+                h1 ^= (charCode + i * 17 + pkt);
+                h1 = Math.imul(h1, 0x01000193);
+                hex += ((h1 >>> 0) % 16).toString(16);
+            }
+            return hex;
+        }
+
+        // =========================================================================
+        // 4. INISIALISASI KOMPONEN UI INTERAKTIF (PRESET, WARNA, DIPSTICK)
+        // =========================================================================
+        function initInteractiveControls() {
+            // Render 8 Preset Buttons
+            const presetContainer = document.getElementById('presetButtonsContainer');
+            presetContainer.innerHTML = clinicalPresets.map(p => {
+                const isSelected = state.activePreset === p.id;
+                return `<button data-preset="${p.id}" class="preset-card text-left p-2.5 rounded-xl border transition ${isSelected ? 'bg-cyan-950/70 border-cyan-500 shadow-md shadow-cyan-500/10' : 'bg-slate-950/70 border-slate-800 hover:border-slate-600'}">
+                    <div class="text-xs font-bold ${isSelected ? 'text-cyan-300' : 'text-slate-200'} truncate">${p.title}</div>
+                    <div class="text-[10px] text-slate-400 truncate mt-0.5">${p.sub}</div>
+                </button>`;
+            }).join('');
+
+            presetContainer.querySelectorAll('.preset-card').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const pid = btn.getAttribute('data-preset');
+                    const preset = clinicalPresets.find(x => x.id === pid);
+                    if (!preset) return;
+                    const cfg = preset.apply();
+                    state.activePreset = pid;
+                    state.volume = cfg.volume;
+                    state.weight = cfg.weight;
+                    state.duration = cfg.duration;
+                    state.color = cfg.color;
+                    state.ph = cfg.ph;
+                    state.turbidity = cfg.turbidity;
+                    state.sg = cfg.sg;
+                    state.kinked = cfg.kinked;
+                    state.dipstick = { ...cfg.dipstick };
+
+                    // Sinkronkan kontrol DOM
+                    document.getElementById('volumeSlider').value = state.volume;
+                    document.getElementById('weightSlider').value = state.weight;
+                    document.getElementById('weightInput').value = state.weight;
+                    document.getElementById('durationSelect').value = String(state.duration);
+                    document.getElementById('phSlider').value = state.ph;
+                    document.getElementById('sgSlider').value = state.sg;
+                    document.getElementById('activePresetLabel').textContent = `Skenario Aktif: ${preset.title}`;
+
+                    addAlarmLog(`Preset klinis "${preset.title}" diterapkan.`, 'info');
+                    refreshPresetHighlight();
+                    renderColorSwatches();
+                    renderTurbidityButtons();
+                    renderDipstickTable();
+                    updateUI(0);
+                });
+            });
+
+            renderColorSwatches();
+            renderTurbidityButtons();
+            renderDipstickTable();
+        }
+
+        function refreshPresetHighlight() {
+            document.querySelectorAll('.preset-card').forEach(btn => {
+                const isSelected = btn.getAttribute('data-preset') === state.activePreset;
+                btn.className = `preset-card text-left p-2.5 rounded-xl border transition ${isSelected ? 'bg-cyan-950/70 border-cyan-500 shadow-md shadow-cyan-500/10' : 'bg-slate-950/70 border-slate-800 hover:border-slate-600'}`;
+                btn.querySelector('div:first-child').className = `text-xs font-bold ${isSelected ? 'text-cyan-300' : 'text-slate-200'} truncate`;
+            });
+        }
+
+        function markManualOverride() {
+            state.activePreset = 'custom';
+            document.getElementById('activePresetLabel').textContent = 'Skenario Aktif: Kustom (Manual)';
+            refreshPresetHighlight();
+        }
+
+        function renderColorSwatches() {
+            const grid = document.getElementById('colorOptionsGrid');
+            grid.innerHTML = Object.values(colorProfiles).map(c => {
+                const active = state.color === c.id;
+                return `<button type="button" data-color="${c.id}" title="${c.name}" class="color-swatch-btn h-7 rounded-lg border-2 transition transform ${active ? 'border-cyan-400 scale-110 shadow-md' : 'border-slate-700 opacity-80 hover:opacity-100'}" style="background-color: ${c.swatch};"></button>`;
+            }).join('');
+
+            grid.querySelectorAll('.color-swatch-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    state.color = btn.getAttribute('data-color');
+                    markManualOverride();
+                    renderColorSwatches();
+                    updateUI(0);
+                });
+            });
+        }
+
+        function renderTurbidityButtons() {
+            document.querySelectorAll('.turb-btn').forEach(btn => {
+                const tKey = btn.getAttribute('data-turb');
+                const active = state.turbidity === tKey;
+                btn.className = active
+                    ? 'turb-btn px-2 py-1.5 rounded-lg text-xs font-semibold bg-cyan-600 text-white border border-cyan-400 transition'
+                    : 'turb-btn px-2 py-1.5 rounded-lg text-xs font-medium bg-slate-900 text-slate-300 border border-slate-700 hover:border-slate-500 transition';
+            });
+        }
+
+        function renderDipstickTable() {
+            const tbody = document.getElementById('dipstickTableBody');
+            tbody.innerHTML = dipstickSpecs.map(spec => {
+                const cur = state.dipstick[spec.key];
+                const padColor = spec.colors[cur];
+                const valText = spec.values[cur];
+                const interpText = spec.interp[cur];
+                const textHighlight = cur === 'positif' ? 'text-rose-300 font-semibold' : (cur === 'trace' ? 'text-amber-300 font-medium' : 'text-slate-300');
+
+                return `<tr class="hover:bg-slate-900/50 transition">
+                    <td class="py-2 px-3 font-semibold text-slate-200">${spec.name}</td>
+                    <td class="py-2 px-3">
+                        <span class="inline-block w-6 h-4 rounded border border-white/30 shadow-inner" style="background-color: ${padColor};"></span>
+                    </td>
+                    <td class="py-2 px-3">
+                        <div class="inline-flex rounded-lg bg-slate-900 p-0.5 border border-slate-700 text-[11px]">
+                            <button type="button" data-chem="${spec.key}" data-val="negatif" class="dip-btn px-2 py-0.5 rounded-md transition ${cur === 'negatif' ? 'bg-emerald-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}">Negatif</button>
+                            <button type="button" data-chem="${spec.key}" data-val="trace" class="dip-btn px-2 py-0.5 rounded-md transition ${cur === 'trace' ? 'bg-amber-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}">Trace</button>
+                            <button type="button" data-chem="${spec.key}" data-val="positif" class="dip-btn px-2 py-0.5 rounded-md transition ${cur === 'positif' ? 'bg-rose-600 text-white font-semibold' : 'text-slate-400 hover:text-white'}">Positif</button>
+                        </div>
+                    </td>
+                    <td class="py-2 px-3 font-mono text-[11px] ${textHighlight}">${valText}</td>
+                    <td class="py-2 px-3 text-[11px] text-slate-300">${interpText}</td>
+                </tr>`;
+            }).join('');
+
+            tbody.querySelectorAll('.dip-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const chemKey = btn.getAttribute('data-chem');
+                    const val = btn.getAttribute('data-val');
+                    state.dipstick[chemKey] = val;
+                    markManualOverride();
+                    renderDipstickTable();
+                    updateUI(0);
+                });
+            });
+        }
+
+        // =========================================================================
+        // 5. PEMBARUAN SELURUH TAMPILAN UI (SINKRONISASI REAL-TIME)
+        // =========================================================================
+        function updateUI(swayOffset = 0) {
+            const bio = calculateBiomechanics(state.volume, state.color, state.sg, swayOffset);
+            const clin = evaluateClinicalStatus();
+            const cProf = colorProfiles[state.color];
+            const tProf = turbidityProfiles[state.turbidity];
+            const pct = Math.round((state.volume / 1000) * 100);
+
+            // 1. Update Kontrol Berat Badan, Durasi & Volume
+            document.getElementById('weightDisplay').textContent = state.weight;
+            document.getElementById('oliguriaThresholdDisplay').textContent = `${clin.oliguriaLimitPerHour.toFixed(1)} mL/jam`;
+            document.getElementById('durationDisplay').textContent = `${state.duration}.0 jam`;
+            document.getElementById('minTargetVolDisplay').textContent = `${Math.round(clin.minTargetTotalVol)} mL`;
+            document.getElementById('targetDurLabel').textContent = `${state.duration}j`;
+
+            document.getElementById('volumeDisplay').textContent = `${state.volume} mL`;
+            document.getElementById('percentDisplay').textContent = `(${pct}%)`;
+            document.getElementById('timeToFullBadge').textContent = `Penuh: ${clin.est100}`;
+
+            // Metrik Output Klinis
+            document.getElementById('metricVol').textContent = `${state.volume} mL`;
+            document.getElementById('metricRate').textContent = state.kinked ? '0.0 mL/j (Henti)' : `${clin.rateMlPerHour.toFixed(1)} mL/jam`;
+            const kgRateEl = document.getElementById('metricKgRate');
+            kgRateEl.textContent = `${clin.rateMlPerKgHour.toFixed(2)} mL/kg/j`;
+            kgRateEl.className = `font-mono text-sm sm:text-base font-bold ${clin.rateMlPerKgHour < 0.5 ? 'text-rose-400' : 'text-emerald-400'}`;
+
+            const diurClassEl = document.getElementById('metricDiuresisClass');
+            if (clin.rateMlPerKgHour < 0.5) {
+                diurClassEl.textContent = 'Oliguria (<0.5)';
+                diurClassEl.className = 'text-xs sm:text-sm font-bold text-rose-400 mt-0.5';
+            } else if (clin.rateMlPerKgHour > 2.0) {
+                diurClassEl.textContent = 'Poliuria / Diuresis Tinggi';
+                diurClassEl.className = 'text-xs sm:text-sm font-bold text-cyan-300 mt-0.5';
+            } else {
+                diurClassEl.textContent = 'Normal (≥0.5)';
+                diurClassEl.className = 'text-xs sm:text-sm font-bold text-emerald-300 mt-0.5';
+            }
+
+            document.getElementById('metricEst80').textContent = clin.est80;
+            document.getElementById('metricEst100').textContent = clin.est100;
+
+            // Tombol Selang Tertekuk
+            const kinkBtn = document.getElementById('btnKinkTube');
+            const kinkInd = document.getElementById('kinkIndicator');
+            const kinkTxt = document.getElementById('kinkText');
+            if (state.kinked) {
+                kinkBtn.className = 'flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-semibold bg-rose-950/80 text-rose-300 border border-rose-500/60 transition';
+                kinkInd.className = 'w-2 h-2 rounded-full bg-rose-500 animate-ping';
+                kinkTxt.textContent = 'Selang: TERTEKUK!';
+            } else {
+                kinkBtn.className = 'flex-1 flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl text-[11px] font-medium bg-slate-800 hover:bg-slate-750 text-slate-300 border border-slate-700 transition';
+                kinkInd.className = 'w-2 h-2 rounded-full bg-emerald-400';
+                kinkTxt.textContent = 'Selang: Lancar';
+            }
+
+            // 2. Update Readout Biomekanika & 5 Sensor Kapasitif
+            document.getElementById('d2Readout').textContent = `${bio.d2.toFixed(1)} mm`;
+            document.getElementById('capValue').textContent = `${bio.totalCap.toFixed(1)} pF`;
+            document.getElementById('voltValue').textContent = `${bio.adcVoltage.toFixed(2)} V`;
+            document.getElementById('estVolValue').textContent = bio.estRange;
+
+            const biomechText = document.getElementById('biomechText');
+            if (state.volume < 50) {
+                biomechText.innerHTML = `<strong>Fase Kantong Kosong (${state.volume} mL):</strong> Ruang antar pelat tembaga diisi udara (εr ≈ 1). Dinding kantong PVC kempis (d₂ ≈ ${bio.d2.toFixed(1)} mm).`;
+            } else if (state.volume <= 450) {
+                biomechText.innerHTML = `<strong>Fase Lonjakan Dielektrik (${state.volume} mL):</strong> Cairan (εr ≈ ${cProf.dielectric}) menutupi elektroda bawah. Kapasitansi naik tajam karena perubahan permitivitas dielektrik jauh lebih besar dibanding pelebaran pelat (d₂ = ${bio.d2.toFixed(1)} mm).`;
+            } else {
+                biomechText.innerHTML = `<strong>Fase Penggembungan Biomekanika (${state.volume} mL):</strong> Kantong lentur mengembang secara lateral (d₂ = ${bio.d2.toFixed(1)} mm). Pelebaran jarak pelat membuat kurva tegangan melandai secara non-linear, namun 5 elektroda bertingkat tetap mendeteksi ketinggian cairan.`;
+            }
+
+            document.getElementById('sensorBarsContainer').innerHTML = bio.sensorStates.map(s => {
+                const covPct = Math.round(s.coverage * 100);
+                return `<div class="bg-slate-900 px-2 py-1.5 rounded-lg border ${s.active ? 'border-cyan-500/40' : 'border-slate-800'} text-[10px]">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="font-bold ${s.active ? 'text-cyan-300' : 'text-slate-400'}">${s.name}</span>
+                        <span class="font-mono ${s.active ? 'text-emerald-400' : 'text-slate-500'}">${s.active ? 'ON' : 'OFF'}</span>
+                    </div>
+                    <div class="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                        <div class="h-full bg-gradient-to-r from-amber-500 to-cyan-400" style="width: ${covPct}%"></div>
+                    </div>
+                </div>`;
+            }).join('');
+
+            // 3. Update Panel Urine Quality & Chemical Analysis
+            // Color Sensor
+            document.getElementById('colorDetectedName').textContent = cProf.name;
+            document.getElementById('colorVisualStatus').textContent = cProf.status;
+            document.getElementById('colorCauseText').textContent = cProf.cause;
+            const colBadge = document.getElementById('colorUrgencyBadge');
+            colBadge.textContent = cProf.badgeText;
+            colBadge.className = cProf.urgency === 'red'
+                ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                : (cProf.urgency === 'yellow'
+                    ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30');
+
+            // pH Sensor
+            document.getElementById('phValueDisplay').textContent = state.ph.toFixed(1);
+            let phCat = 'Mendekati Netral';
+            let phBadgeCls = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+            let phInterp = 'Berada dalam rentang fisiologis umum urine (4.5–8.0).';
+            if (state.ph < 4.5) {
+                phCat = 'Sangat Asam (<4.5)';
+                phBadgeCls = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                phInterp = 'Di bawah rentang umum (4.5–8.0): dapat berkaitan dengan asidosis metabolik, diet tinggi protein, atau dehidrasi berat.';
+            } else if (state.ph < 6.5) {
+                phCat = 'Asam Fisiologis';
+                phBadgeCls = 'bg-teal-500/20 text-teal-300 border-teal-500/30';
+                phInterp = 'pH sedikit asam (4.5–6.4) merupakan temuan fisiologis normal akibat ekskresi asam metabolik.';
+            } else if (state.ph <= 7.4) {
+                phCat = 'Mendekati Netral';
+                phBadgeCls = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+                phInterp = 'pH netral (6.5–7.4) dalam batas umum; dipengaruhi diet seimbang dan hidrasi.';
+            } else if (state.ph <= 8.0) {
+                phCat = 'Basa Ringan';
+                phBadgeCls = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
+                phInterp = 'pH basa ringan (7.5–8.0) masih dalam rentang umum; dapat dipengaruhi diet vegetarian atau post-prandial.';
+            } else {
+                phCat = 'Sangat Basa (>8.0)';
+                phBadgeCls = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                phInterp = 'Di atas rentang umum (>8.0): perlu evaluasi infeksi bakteri pemecah urea (Proteus) atau sampel urine yang terlalu lama disimpan.';
+            }
+            const phBadgeEl = document.getElementById('phCategoryBadge');
+            phBadgeEl.textContent = phCat;
+            phBadgeEl.className = `text-[10px] font-bold px-2 py-0.5 rounded-full border ${phBadgeCls}`;
+            document.getElementById('phClassText').textContent = `${phCat} (pH ${state.ph.toFixed(1)})`;
+            document.getElementById('phInterpretText').textContent = phInterp;
+
+            // Turbidity Sensor
+            const turbBadge = document.getElementById('turbidityBadge');
+            turbBadge.textContent = tProf.shortLabel;
+            turbBadge.className = tProf.urgency === 'red'
+                ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                : (tProf.urgency === 'yellow'
+                    ? 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                    : 'text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30');
+            document.getElementById('turbidityNtuText').textContent = tProf.ntu;
+            document.getElementById('turbidityInterpretText').textContent = tProf.interpret;
+
+            // Specific Gravity Sensor
+            document.getElementById('sgValueDisplay').textContent = state.sg.toFixed(3);
+            let sgCat = 'Rentang Umum';
+            let sgCls = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30';
+            let sgInterp = 'Konsentrasi zat terlarut dalam rentang umum (1.010–1.025).';
+            if (state.sg < 1.010) {
+                sgCat = 'Encer (<1.010)';
+                sgCls = 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30';
+                sgInterp = 'Urine encer: menunjukkan asupan cairan tinggi, efek diuretik, atau penurunan kemampuan pemekatan tubulus.';
+            } else if (state.sg > 1.025) {
+                sgCat = 'Pekat (>1.025)';
+                sgCls = 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+                sgInterp = 'Urine pekat: berkaitan dengan dehidrasi, penurunan perfusi ginjal, glukosuria, atau proteinuria.';
+            }
+            const sgBadgeEl = document.getElementById('sgCategoryBadge');
+            sgBadgeEl.textContent = sgCat;
+            sgBadgeEl.className = `text-[10px] font-bold px-2 py-0.5 rounded-full border ${sgCls}`;
+            document.getElementById('sgClassText').textContent = `${sgCat} (SG ${state.sg.toFixed(3)})`;
+            document.getElementById('sgInterpretText').textContent = sgInterp;
+
+            // Dipstick Advisory Banner
+            const advBanner = document.getElementById('dipstickAdvisoryBanner');
+            if (clin.abnormalChems.length > 0) {
+                advBanner.classList.remove('hidden');
+                advBanner.classList.add('flex');
+            } else {
+                advBanner.classList.add('hidden');
+                advBanner.classList.remove('flex');
+            }
+
+            // 4. Update Dashboard Android Perawat & Urgensi Global
+            document.getElementById('appVolRate').textContent = `${state.volume}mL | ${clin.rateMlPerHour.toFixed(0)}/j`;
+            const appKgEl = document.getElementById('appKgRate');
+            appKgEl.textContent = `${clin.rateMlPerKgHour.toFixed(2)} mL/kg/j`;
+            appKgEl.className = `font-mono font-bold ${clin.rateMlPerKgHour < 0.5 ? 'text-rose-400' : 'text-emerald-400'}`;
+
+            document.getElementById('appColorDot').style.backgroundColor = cProf.swatch;
+            document.getElementById('appColorText').textContent = cProf.name;
+            document.getElementById('appPhText').textContent = `${state.ph.toFixed(1)} (${phCat.split(' ')[0]})`;
+            document.getElementById('appTurbidityText').textContent = tProf.shortLabel;
+            document.getElementById('appSgText').textContent = state.sg.toFixed(3);
+
+            const dipSumEl = document.getElementById('appDipstickSummary');
+            if (clin.abnormalChems.length === 0) {
+                dipSumEl.textContent = 'Semua Negatif (Normal)';
+                dipSumEl.className = 'font-mono font-semibold text-emerald-400';
+            } else {
+                dipSumEl.textContent = clin.abnormalChems.map(d => `${d.name.split(' ')[0]}:${state.dipstick[d.key] === 'positif' ? '+' : '±'}`).join(' ');
+                dipSumEl.className = 'font-mono font-semibold text-amber-300';
+            }
+
+            // Banner Urgensi pada Header & Android Monitor
+            const globalBadge = document.getElementById('globalTriageBadge');
+            const globalDot = document.getElementById('globalTriageDot');
+            const globalText = document.getElementById('globalTriageText');
+            const alertBox = document.getElementById('clinicalAlertBox');
+            const alertTitle = document.getElementById('clinicalAlertTitle');
+            const alertDesc = document.getElementById('clinicalAlertDesc');
+            const alertIcon = document.getElementById('clinicalAlertIcon');
+            document.getElementById('alarmCountBadge').textContent = `${clin.alarms.length} Peringatan`;
+
+            if (clin.maxUrgency === 'red') {
+                globalBadge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-rose-950/80 border border-rose-500/60 text-xs font-bold text-rose-300 transition-all';
+                globalDot.className = 'w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping';
+                globalText.textContent = 'URGENSI MERAH: Evaluasi Segera';
+
+                alertBox.className = 'p-3 rounded-xl bg-rose-950/60 border border-rose-500/60 flex items-start gap-2.5 transition-all';
+                alertTitle.className = 'text-xs font-bold text-rose-300';
+                alertTitle.textContent = `MERAH: ${clin.alarms[0].title}`;
+                alertDesc.textContent = clin.alarms.map(a => a.title).join(' • ');
+                alertIcon.setAttribute('data-lucide', 'alert-octagon');
+                alertIcon.className = 'w-5 h-5 text-rose-400 shrink-0 mt-0.5 animate-pulse';
+            } else if (clin.maxUrgency === 'yellow') {
+                globalBadge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-950/80 border border-amber-500/50 text-xs font-bold text-amber-300 transition-all';
+                globalDot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse';
+                globalText.textContent = 'URGENSI KUNING: Perlu Perhatian';
+
+                alertBox.className = 'p-3 rounded-xl bg-amber-950/50 border border-amber-500/50 flex items-start gap-2.5 transition-all';
+                alertTitle.className = 'text-xs font-bold text-amber-300';
+                alertTitle.textContent = `KUNING: ${clin.alarms[0].title}`;
+                alertDesc.textContent = clin.alarms.map(a => a.title).join(' • ');
+                alertIcon.setAttribute('data-lucide', 'alert-triangle');
+                alertIcon.className = 'w-5 h-5 text-amber-400 shrink-0 mt-0.5';
+            } else {
+                globalBadge.className = 'flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/70 border border-emerald-500/40 text-xs font-semibold text-emerald-300 transition-all';
+                globalDot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400';
+                globalText.textContent = 'URGENSI HIJAU: Dalam Batas Pemantauan';
+
+                alertBox.className = 'p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 flex items-start gap-2.5 transition-all';
+                alertTitle.className = 'text-xs font-bold text-emerald-300';
+                alertTitle.textContent = 'HIJAU: Kondisi Dalam Batas Pemantauan';
+                alertDesc.textContent = 'Diuresis adekuat, aliran selang lancar, dan karakteristik fisik-kimia urine dalam batas pemantauan.';
+                alertIcon.setAttribute('data-lucide', 'check-circle-2');
+                alertIcon.className = 'w-5 h-5 text-emerald-400 shrink-0 mt-0.5';
+            }
+
+            // Catat otomatis ke Riwayat Alarm jika kombinasi alarm berubah
+            const sig = clin.alarms.map(a => a.title).join('|');
+            if (sig !== state.lastAlarmSignature) {
+                state.lastAlarmSignature = sig;
+                if (clin.alarms.length > 0) {
+                    addAlarmLog(clin.alarms[0].title, clin.maxUrgency);
+                } else {
+                    addAlarmLog('Semua parameter kembali dalam batas pemantauan.', 'info');
+                }
+            }
+
+            lucide.createIcons();
+
+            // 5. Update Payload & Enkripsi AES-256
+            const rawJson = `{"id":"PT-2026-084","vol":${state.volume},"rate_kg":${clin.rateMlPerKgHour.toFixed(2)},"ph":${state.ph.toFixed(1)},"sg":${state.sg.toFixed(3)},"urg":"${clin.maxUrgency}"}`;
+            document.getElementById('rawPayload').textContent = rawJson;
+            document.getElementById('cipherPayload').textContent = generateSimulatedAES256(state.volume, bio.adcVoltage, state.packetCount);
+        }
+
+        // =========================================================================
+        // 6. KANVAS 1: VISUALISASI 2.5D KANTONG URINE & BIOMEKANIKA SAMPING
+        // =========================================================================
+        const bagCanvas = document.getElementById('bagCanvas');
+        const bagCtx = bagCanvas.getContext('2d');
+
+        function drawBagCanvas(swayOffset) {
+            const rect = bagCanvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            if (bagCanvas.width !== Math.floor(rect.width * dpr) || bagCanvas.height !== Math.floor(rect.height * dpr)) {
+                bagCanvas.width = Math.floor(rect.width * dpr);
+                bagCanvas.height = Math.floor(rect.height * dpr);
+            }
+            bagCtx.save();
+            bagCtx.scale(dpr, dpr);
+
+            const W = rect.width;
+            const H = rect.height;
+            bagCtx.clearRect(0, 0, W, H);
+
+            // Grid Latar Medis
+            bagCtx.strokeStyle = 'rgba(30, 41, 59, 0.45)';
+            bagCtx.lineWidth = 1;
+            for (let x = 0; x < W; x += 28) {
+                bagCtx.beginPath(); bagCtx.moveTo(x, 0); bagCtx.lineTo(x, H); bagCtx.stroke();
+            }
+            for (let y = 0; y < H; y += 28) {
+                bagCtx.beginPath(); bagCtx.moveTo(0, y); bagCtx.lineTo(W, y); bagCtx.stroke();
+            }
+
+            const bio = calculateBiomechanics(state.volume, state.color, state.sg, swayOffset);
+            const cProf = colorProfiles[state.color];
+            const tProf = turbidityProfiles[state.turbidity];
+
+            const leftCenterX = W * 0.32;
+            const rightCenterX = W * 0.76;
+            const bagTopY = 74;
+            const bagHeight = H - 135;
+            const bagWidth = Math.min(185, W * 0.34);
+
+            const swayAngle = state.swayEnabled ? swayOffset * 0.045 : 0;
+
+            // --- BAGIAN A: TAMPAK DEPAN / BELAKANG KANTONG URINE ---
+            bagCtx.save();
+            bagCtx.translate(leftCenterX, 24);
+            bagCtx.rotate(swayAngle);
+            bagCtx.translate(-leftCenterX, -24);
+
+            // Gantungan Atas
+            bagCtx.strokeStyle = '#64748b';
+            bagCtx.lineWidth = 3;
+            bagCtx.beginPath();
+            bagCtx.arc(leftCenterX, 20, 8, Math.PI, 0);
+            bagCtx.stroke();
+
+            // Selang Kateter Inlet (dengan simulasi tertekuk jika state.kinked = true)
+            const tubeX = leftCenterX - 30;
+            bagCtx.strokeStyle = state.kinked ? 'rgba(244, 63, 94, 0.85)' : 'rgba(148, 163, 184, 0.65)';
+            bagCtx.lineWidth = 7;
+            bagCtx.beginPath();
+            bagCtx.moveTo(tubeX, 0);
+            if (state.kinked) {
+                bagCtx.lineTo(tubeX, 24);
+                bagCtx.lineTo(tubeX + 12, 30);
+                bagCtx.lineTo(tubeX - 10, 36);
+                bagCtx.lineTo(tubeX, 42);
+            }
+            bagCtx.lineTo(tubeX, bagTopY);
+            bagCtx.stroke();
+
+            // Modul Inline Multi-Sensor Chamber (Optik, pH, SG, Dipstick) pada selang masuk
+            bagCtx.fillStyle = '#0f172a';
+            bagCtx.strokeStyle = '#14b8a6';
+            bagCtx.lineWidth = 1.6;
+            roundRect(bagCtx, tubeX - 13, 44, 26, 22, 5, true, true);
+            bagCtx.fillStyle = cProf.swatch;
+            bagCtx.beginPath();
+            bagCtx.arc(tubeX, 55, 4.5, 0, Math.PI * 2);
+            bagCtx.fill();
+
+            // Animasi Tetesan Urine Mengalir di Selang (Berhenti jika tertekuk atau penuh 1000 mL)
+            if (!state.kinked && state.volume < 1000) {
+                bagCtx.fillStyle = cProf.swatch;
+                const dropY1 = (state.phase * 28) % (bagTopY - 6);
+                const dropY2 = ((state.phase * 28) + 34) % (bagTopY - 6);
+                bagCtx.beginPath();
+                bagCtx.arc(tubeX, dropY1, 2.5, 0, Math.PI * 2);
+                bagCtx.arc(tubeX, dropY2, 2.5, 0, Math.PI * 2);
+                bagCtx.fill();
+            } else if (state.kinked) {
+                bagCtx.fillStyle = '#fb7185';
+                bagCtx.font = 'bold 9px JetBrains Mono';
+                bagCtx.textAlign = 'right';
+                bagCtx.fillText('TERTEKUK!', tubeX - 14, 33);
+            }
+
+            // Bodi Kantong PVC Standar
+            const bx = leftCenterX - bagWidth / 2;
+            const by = bagTopY;
+            bagCtx.fillStyle = 'rgba(30, 41, 59, 0.45)';
+            bagCtx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+            bagCtx.lineWidth = 2;
+            roundRect(bagCtx, bx, by, bagWidth, bagHeight, 16, true, true);
+
+            // Klip Kantong untuk Menggambar Cairan Dinamis (Warna + Kekeruhan)
+            bagCtx.save();
+            roundRect(bagCtx, bx + 2, by + 2, bagWidth - 4, bagHeight - 4, 14, false, false);
+            bagCtx.clip();
+
+            if (state.volume > 0) {
+                const fillHeight = (state.volume / 1000) * (bagHeight - 10);
+                const liquidTopY = by + bagHeight - fillHeight;
+
+                const grad = bagCtx.createLinearGradient(0, liquidTopY, 0, by + bagHeight);
+                grad.addColorStop(0, cProf.liquidTop);
+                grad.addColorStop(1, cProf.liquidBottom);
+
+                bagCtx.save();
+                bagCtx.globalAlpha = tProf.alphaMultiplier;
+                bagCtx.fillStyle = grad;
+                bagCtx.beginPath();
+                bagCtx.moveTo(bx, by + bagHeight);
+                bagCtx.lineTo(bx, liquidTopY);
+
+                for (let x = 0; x <= bagWidth; x += 6) {
+                    const waveAmp = state.swayEnabled ? 3.5 : 1.1;
+                    const wy = liquidTopY + Math.sin((x * 0.06) + state.phase * 3) * waveAmp;
+                    bagCtx.lineTo(bx + x, wy);
+                }
+                bagCtx.lineTo(bx + bagWidth, by + bagHeight);
+                bagCtx.closePath();
+                bagCtx.fill();
+
+                // Efek Lapisan Kekeruhan (Haze) & Partikel Tersuspensi
+                if (tProf.hazeOverlay > 0) {
+                    bagCtx.fillStyle = `rgba(241, 245, 249, ${tProf.hazeOverlay * 0.42})`;
+                    bagCtx.fill();
+
+                    bagCtx.fillStyle = 'rgba(255, 255, 255, 0.45)';
+                    for (let p = 0; p < tProf.particles; p++) {
+                        const px = bx + 10 + ((p * 37 + Math.sin(state.phase + p) * 6) % (bagWidth - 20));
+                        const py = liquidTopY + 6 + ((p * 29 + Math.cos(state.phase * 0.8 + p) * 4) % Math.max(10, fillHeight - 12));
+                        bagCtx.beginPath();
+                        bagCtx.arc(px, py, (p % 2) + 1.1, 0, Math.PI * 2);
+                        bagCtx.fill();
+                    }
+                }
+                bagCtx.restore();
+            }
+            bagCtx.restore();
+
+            // Garis Skala Volume di Kantong
+            bagCtx.fillStyle = 'rgba(226, 232, 240, 0.7)';
+            bagCtx.font = '10px JetBrains Mono';
+            bagCtx.textAlign = 'left';
+            for (let m = 200; m <= 1000; m += 200) {
+                const sy = by + bagHeight - (m / 1000) * (bagHeight - 10);
+                bagCtx.fillRect(bx + 8, sy, 10, 1);
+                bagCtx.fillText(`${m}`, bx + 21, sy + 3);
+            }
+
+            // Elektroda Pita Tembaga Broad-Side Coupled
+            const electrodeW = 18;
+            const totalElectrodeAreaH = bagHeight - 28;
+            const electrodeTopY = by + 14;
+
+            if (state.viewMode === 'both') {
+                bagCtx.fillStyle = 'rgba(217, 119, 6, 0.88)';
+                bagCtx.strokeStyle = '#fbbf24';
+                bagCtx.lineWidth = 1.5;
+                roundRect(bagCtx, leftCenterX - electrodeW / 2, electrodeTopY, electrodeW, totalElectrodeAreaH, 3, true, true);
+
+                const singleSensorH = (totalElectrodeAreaH - 4 * 8) / 5;
+                bio.sensorStates.forEach((s, idx) => {
+                    const revIdx = 4 - idx;
+                    const sy = electrodeTopY + revIdx * (singleSensorH + 8);
+                    bagCtx.strokeStyle = s.active ? '#22d3ee' : 'rgba(255,255,255,0.45)';
+                    bagCtx.lineWidth = s.active ? 2 : 1;
+                    bagCtx.setLineDash([3, 3]);
+                    bagCtx.strokeRect(leftCenterX - electrodeW / 2 - 3, sy, electrodeW + 6, singleSensorH);
+                    bagCtx.setLineDash([]);
+                });
+            } else {
+                const singleSensorH = (totalElectrodeAreaH - 4 * 9) / 5;
+                bio.sensorStates.forEach((s, idx) => {
+                    const revIdx = 4 - idx;
+                    const sy = electrodeTopY + revIdx * (singleSensorH + 9);
+                    bagCtx.fillStyle = s.active ? 'rgba(6, 182, 212, 0.9)' : 'rgba(217, 119, 6, 0.75)';
+                    bagCtx.strokeStyle = s.active ? '#67e8f9' : '#fbbf24';
+                    bagCtx.lineWidth = 1.5;
+                    roundRect(bagCtx, leftCenterX - electrodeW / 2, sy, electrodeW, singleSensorH, 3, true, true);
+
+                    bagCtx.fillStyle = s.active ? '#22d3ee' : '#94a3b8';
+                    bagCtx.font = 'bold 10px JetBrains Mono';
+                    bagCtx.textAlign = 'left';
+                    bagCtx.fillText(`S${s.id}`, leftCenterX + electrodeW / 2 + 8, sy + singleSensorH / 2 + 3);
+                });
+            }
+
+            // Katup Pembuangan Bawah
+            bagCtx.fillStyle = '#475569';
+            roundRect(bagCtx, leftCenterX - 8, by + bagHeight, 16, 14, 3, true, false);
+
+            bagCtx.fillStyle = '#e2e8f0';
+            bagCtx.font = 'bold 11px Inter';
+            bagCtx.textAlign = 'center';
+            bagCtx.fillText(
+                state.viewMode === 'both' ? 'Tampak Depan (Ref Cu)' : 'Tampak Belakang (5 Sensor)',
+                leftCenterX,
+                by + bagHeight + 30
+            );
+            bagCtx.restore();
+
+            // --- BAGIAN B: PENAMPANG SAMPING BIOMEKANIKA (DEFORMASI d2) ---
+            const sideTopY = bagTopY;
+            const sideH = bagHeight;
+            const bulgeVisualWidth = 14 + (bio.d2 / 28.5) * 68;
+
+            bagCtx.strokeStyle = 'rgba(100, 116, 139, 0.35)';
+            bagCtx.setLineDash([4, 4]);
+            bagCtx.beginPath();
+            bagCtx.moveTo(rightCenterX, sideTopY - 12);
+            bagCtx.lineTo(rightCenterX, sideTopY + sideH + 12);
+            bagCtx.stroke();
+            bagCtx.setLineDash([]);
+
+            const bottomBulgeFactor = state.volume > 0 ? 1.15 : 1.0;
+            const topBulgeFactor = state.volume > 0 ? 0.65 : 1.0;
+
+            bagCtx.save();
+            bagCtx.beginPath();
+            bagCtx.moveTo(rightCenterX - 4, sideTopY);
+            bagCtx.bezierCurveTo(
+                rightCenterX - bulgeVisualWidth * 0.5 * topBulgeFactor, sideTopY + sideH * 0.3,
+                rightCenterX - bulgeVisualWidth * 0.65 * bottomBulgeFactor, sideTopY + sideH * 0.75,
+                rightCenterX - 4, sideTopY + sideH
+            );
+            bagCtx.lineTo(rightCenterX + 4, sideTopY + sideH);
+            bagCtx.bezierCurveTo(
+                rightCenterX + bulgeVisualWidth * 0.65 * bottomBulgeFactor, sideTopY + sideH * 0.75,
+                rightCenterX + bulgeVisualWidth * 0.5 * topBulgeFactor, sideTopY + sideH * 0.3,
+                rightCenterX + 4, sideTopY
+            );
+            bagCtx.closePath();
+
+            bagCtx.fillStyle = 'rgba(30, 41, 59, 0.5)';
+            bagCtx.fill();
+
+            bagCtx.save();
+            bagCtx.clip();
+            if (state.volume > 0) {
+                const fillH = (state.volume / 1000) * (sideH - 8);
+                const liqY = sideTopY + sideH - fillH;
+                bagCtx.globalAlpha = tProf.alphaMultiplier;
+                bagCtx.fillStyle = cProf.liquidTop;
+                bagCtx.fillRect(rightCenterX - 65, liqY, 130, fillH + 10);
+            }
+            bagCtx.restore();
+
+            bagCtx.strokeStyle = '#94a3b8';
+            bagCtx.lineWidth = 2;
+            bagCtx.stroke();
+            bagCtx.restore();
+
+            // Pelat Tembaga Depan & 5 Pelat Sensor Belakang pada Penampang Samping
+            const plateOffsetX = bulgeVisualWidth * 0.54;
+            bagCtx.strokeStyle = '#f59e0b';
+            bagCtx.lineWidth = 3.5;
+            bagCtx.beginPath();
+            bagCtx.moveTo(rightCenterX - 5, sideTopY + 14);
+            bagCtx.quadraticCurveTo(
+                rightCenterX - plateOffsetX - 4, sideTopY + sideH * 0.55,
+                rightCenterX - 5, sideTopY + sideH - 14
+            );
+            bagCtx.stroke();
+
+            bio.sensorStates.forEach((s, idx) => {
+                const revIdx = 4 - idx;
+                const segH = (sideH - 28) / 5;
+                const y1 = sideTopY + 14 + revIdx * segH + 2;
+                const y2 = y1 + segH - 5;
+                const midY = (y1 + y2) / 2;
+                const t = (midY - sideTopY) / sideH;
+                const curveX = 4 + Math.sin(t * Math.PI) * (plateOffsetX - 2);
+
+                bagCtx.strokeStyle = s.active ? '#22d3ee' : '#d97706';
+                bagCtx.lineWidth = 3.5;
+                bagCtx.beginPath();
+                bagCtx.moveTo(rightCenterX + curveX, y1);
+                bagCtx.lineTo(rightCenterX + curveX, y2);
+                bagCtx.stroke();
+            });
+
+            // Panah Dimensi d2
+            const arrowY = sideTopY + sideH * 0.62;
+            const leftPlateX = rightCenterX - plateOffsetX * 0.92;
+            const rightPlateX = rightCenterX + plateOffsetX * 0.92;
+
+            bagCtx.strokeStyle = '#38bdf8';
+            bagCtx.fillStyle = '#38bdf8';
+            bagCtx.lineWidth = 1.5;
+            bagCtx.beginPath();
+            bagCtx.moveTo(leftPlateX, arrowY);
+            bagCtx.lineTo(rightPlateX, arrowY);
+            bagCtx.stroke();
+
+            bagCtx.font = 'bold 10px JetBrains Mono';
+            bagCtx.textAlign = 'center';
+            bagCtx.fillText(`d₂ = ${bio.d2.toFixed(1)}mm`, rightCenterX, arrowY - 7);
+
+            bagCtx.fillStyle = '#e2e8f0';
+            bagCtx.font = 'bold 11px Inter';
+            bagCtx.fillText('Penampang Samping', rightCenterX, sideTopY + sideH + 30);
+
+            bagCtx.restore();
+        }
+
+        function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            if (fill) ctx.fill();
+            if (stroke) ctx.stroke();
+        }
+
+        // =========================================================================
+        // 7. KANVAS 2: GRAFIK TREN PEMANTAUAN INTERVAL (1j, 2j, 4j, 6j) DI MONITOR
+        // =========================================================================
+        const trendCanvas = document.getElementById('trendCanvas');
+        const trendCtx = trendCanvas.getContext('2d');
+
+        function drawTrendCanvas() {
+            const rect = trendCanvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            if (trendCanvas.width !== Math.floor(rect.width * dpr) || trendCanvas.height !== Math.floor(rect.height * dpr)) {
+                trendCanvas.width = Math.floor(rect.width * dpr);
+                trendCanvas.height = Math.floor(rect.height * dpr);
+            }
+            trendCtx.save();
+            trendCtx.scale(dpr, dpr);
+
+            const W = rect.width;
+            const H = rect.height;
+            trendCtx.clearRect(0, 0, W, H);
+
+            const padL = 32;
+            const padR = 10;
+            const padT = 10;
+            const padB = 20;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            const clin = evaluateClinicalStatus();
+            const intervalHrs = state.trendInterval;
+            const pointsCount = 6;
+            const expectedPerInterval = clin.rateMlPerHour * intervalHrs;
+            const targetMinPerInterval = clin.oliguriaLimitPerHour * intervalHrs;
+
+            // Bentuk 6 titik riwayat simulasi realistis menuju laju saat ini
+            const weights = [0.88, 0.94, 0.91, 1.03, 0.97, 1.0];
+            const values = weights.map(w => Math.max(0, expectedPerInterval * w));
+            const maxVal = Math.max(targetMinPerInterval * 1.6, ...values, 50);
+
+            // Garis ambang batas minimal 0.5 mL/kgBB/jam
+            const threshY = padT + plotH - (targetMinPerInterval / maxVal) * plotH;
+            trendCtx.strokeStyle = 'rgba(244, 63, 94, 0.65)';
+            trendCtx.setLineDash([3, 3]);
+            trendCtx.lineWidth = 1;
+            trendCtx.beginPath();
+            trendCtx.moveTo(padL, threshY);
+            trendCtx.lineTo(padL + plotW, threshY);
+            trendCtx.stroke();
+            trendCtx.setLineDash([]);
+
+            trendCtx.fillStyle = '#fb7185';
+            trendCtx.font = '9px JetBrains Mono';
+            trendCtx.textAlign = 'right';
+            trendCtx.fillText(`Min:${Math.round(targetMinPerInterval)}mL`, padL + plotW, Math.max(10, threshY - 3));
+
+            // Batang & Garis Tren
+            const barSlot = plotW / pointsCount;
+            values.forEach((v, idx) => {
+                const bx = padL + idx * barSlot + barSlot * 0.22;
+                const bw = barSlot * 0.56;
+                const bh = (v / maxVal) * plotH;
+                const by = padT + plotH - bh;
+
+                const isBelow = v < targetMinPerInterval;
+                trendCtx.fillStyle = isBelow ? 'rgba(244, 63, 94, 0.65)' : 'rgba(6, 182, 212, 0.65)';
+                roundRect(trendCtx, bx, by, bw, bh, 3, true, false);
+
+                trendCtx.fillStyle = '#94a3b8';
+                trendCtx.font = '9px JetBrains Mono';
+                trendCtx.textAlign = 'center';
+                const labelH = (idx - (pointsCount - 1)) * intervalHrs;
+                trendCtx.fillText(labelH === 0 ? 'Skrg' : `${labelH}j`, bx + bw / 2, H - 5);
+            });
+
+            // Label Sumbu Y
+            trendCtx.fillStyle = '#64748b';
+            trendCtx.textAlign = 'right';
+            trendCtx.fillText(`${Math.round(maxVal)}`, padL - 4, padT + 8);
+            trendCtx.fillText('0', padL - 4, padT + plotH);
+
+            trendCtx.restore();
+        }
+
+        // =========================================================================
+        // 8. KANVAS 3: ANIMASI ALIRAN SINYAL 100 kHz, ESP8266 & ENKRIPSI AES-256
+        // =========================================================================
+        const signalCanvas = document.getElementById('signalCanvas');
+        const signalCtx = signalCanvas.getContext('2d');
+
+        function drawSignalCanvas(swayOffset) {
+            const rect = signalCanvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            if (signalCanvas.width !== Math.floor(rect.width * dpr) || signalCanvas.height !== Math.floor(rect.height * dpr)) {
+                signalCanvas.width = Math.floor(rect.width * dpr);
+                signalCanvas.height = Math.floor(rect.height * dpr);
+            }
+            signalCtx.save();
+            signalCtx.scale(dpr, dpr);
+
+            const W = rect.width;
+            const H = rect.height;
+            signalCtx.clearRect(0, 0, W, H);
+
+            const bio = calculateBiomechanics(state.volume, state.color, state.sg, swayOffset);
+
+            const nodes = [
+                { x: W * 0.13, label: 'Multi-Sensor', sub: 'Cap + Opt + pH', color: '#f59e0b' },
+                { x: W * 0.38, label: 'ESP8266 ADC', sub: `${bio.adcVoltage.toFixed(2)} V`, color: '#06b6d4' },
+                { x: W * 0.63, label: 'AES-256 + OTP', sub: 'Enkripsi Lokal', color: '#10b981' },
+                { x: W * 0.88, label: 'Server & App', sub: 'Wi-Fi 2.4GHz', color: '#8b5cf6' }
+            ];
+
+            const midY = H * 0.42;
+
+            for (let i = 0; i < nodes.length - 1; i++) {
+                const n1 = nodes[i];
+                const n2 = nodes[i + 1];
+
+                signalCtx.strokeStyle = 'rgba(71, 85, 105, 0.6)';
+                signalCtx.lineWidth = 2;
+                signalCtx.beginPath();
+                signalCtx.moveTo(n1.x + 36, midY);
+                signalCtx.lineTo(n2.x - 36, midY);
+                signalCtx.stroke();
+
+                const t = (state.phase * 0.55 + i * 0.33) % 1;
+                const px = (n1.x + 36) + t * ((n2.x - 36) - (n1.x + 36));
+                signalCtx.fillStyle = i >= 2 ? '#10b981' : '#22d3ee';
+                signalCtx.beginPath();
+                signalCtx.arc(px, midY, 4.5, 0, Math.PI * 2);
+                signalCtx.fill();
+            }
+
+            nodes.forEach((n) => {
+                const boxW = Math.min(86, W * 0.21);
+                const boxH = 52;
+                signalCtx.fillStyle = '#0f172a';
+                signalCtx.strokeStyle = n.color;
+                signalCtx.lineWidth = 1.8;
+                roundRect(signalCtx, n.x - boxW / 2, midY - boxH / 2, boxW, boxH, 10, true, true);
+
+                signalCtx.fillStyle = '#f8fafc';
+                signalCtx.font = 'bold 10px Inter';
+                signalCtx.textAlign = 'center';
+                signalCtx.fillText(n.label, n.x, midY - 4);
+
+                signalCtx.fillStyle = n.color;
+                signalCtx.font = '9px JetBrains Mono';
+                signalCtx.fillText(n.sub, n.x, midY + 12);
+            });
+
+            // Gelombang Eksitasi 100 kHz
+            const waveY = H * 0.80;
+            const waveStartX = 18;
+            const waveEndX = W - 18;
+            const amp = 9 + (bio.adcVoltage / 3.3) * 9;
+
+            signalCtx.strokeStyle = 'rgba(245, 158, 11, 0.8)';
+            signalCtx.lineWidth = 1.6;
+            signalCtx.beginPath();
+            const stepW = 18;
+            for (let x = waveStartX; x < waveEndX; x += stepW) {
+                const idx = Math.floor((x + state.phase * 25) / stepW);
+                const high = idx % 2 === 0;
+                const y = high ? waveY - amp : waveY + amp;
+                if (x === waveStartX) signalCtx.moveTo(x, y);
+                else signalCtx.lineTo(x, y);
+                signalCtx.lineTo(x + stepW, y);
+            }
+            signalCtx.stroke();
+
+            signalCtx.fillStyle = '#94a3b8';
+            signalCtx.font = '10px JetBrains Mono';
+            signalCtx.textAlign = 'left';
+            signalCtx.fillText(`Sinyal Eksitasi 100 kHz (Kapasitansi: ${bio.totalCap.toFixed(1)} pF | pH: ${state.ph.toFixed(1)} | SG: ${state.sg.toFixed(3)})`, waveStartX, H - 7);
+
+            signalCtx.restore();
+        }
+
+        // =========================================================================
+        // 9. KANVAS 4: GRAFIK KURVA KARAKTERISTIK NON-LINEAR BIOMEKANIKA
+        // =========================================================================
+        const chartCanvas = document.getElementById('chartCanvas');
+        const chartCtx = chartCanvas.getContext('2d');
+
+        function drawChartCanvas(swayOffset) {
+            const rect = chartCanvas.parentElement.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            if (chartCanvas.width !== Math.floor(rect.width * dpr) || chartCanvas.height !== Math.floor(rect.height * dpr)) {
+                chartCanvas.width = Math.floor(rect.width * dpr);
+                chartCanvas.height = Math.floor(rect.height * dpr);
+            }
+            chartCtx.save();
+            chartCtx.scale(dpr, dpr);
+
+            const W = rect.width;
+            const H = rect.height;
+            chartCtx.clearRect(0, 0, W, H);
+
+            const padL = 44;
+            const padR = 20;
+            const padT = 18;
+            const padB = 30;
+            const plotW = W - padL - padR;
+            const plotH = H - padT - padB;
+
+            chartCtx.strokeStyle = '#334155';
+            chartCtx.lineWidth = 1.5;
+            chartCtx.beginPath();
+            chartCtx.moveTo(padL, padT);
+            chartCtx.lineTo(padL, padT + plotH);
+            chartCtx.lineTo(padL + plotW, padT + plotH);
+            chartCtx.stroke();
+
+            chartCtx.fillStyle = '#64748b';
+            chartCtx.font = '10px JetBrains Mono';
+            chartCtx.textAlign = 'right';
+            for (let v = 0.5; v <= 3.5; v += 1.0) {
+                const y = padT + plotH - ((v - 0.3) / 3.1) * plotH;
+                chartCtx.fillText(`${v.toFixed(1)}V`, padL - 6, y + 3);
+                chartCtx.strokeStyle = 'rgba(51, 65, 85, 0.35)';
+                chartCtx.beginPath();
+                chartCtx.moveTo(padL, y);
+                chartCtx.lineTo(padL + plotW, y);
+                chartCtx.stroke();
+            }
+
+            chartCtx.textAlign = 'center';
+            for (let vol = 0; vol <= 1000; vol += 250) {
+                const x = padL + (vol / 1000) * plotW;
+                chartCtx.fillText(`${vol}`, x, padT + plotH + 15);
+            }
+            chartCtx.fillText('Volume Urine (mL)', padL + plotW / 2, H - 3);
+
+            // Kurva Non-Linear
+            chartCtx.strokeStyle = '#06b6d4';
+            chartCtx.lineWidth = 2.5;
+            chartCtx.beginPath();
+            for (let v = 0; v <= 1000; v += 15) {
+                const b = calculateBiomechanics(v, state.color, state.sg, 0);
+                const x = padL + (v / 1000) * plotW;
+                const y = padT + plotH - ((b.adcVoltage - 0.3) / 3.1) * plotH;
+                if (v === 0) chartCtx.moveTo(x, y);
+                else chartCtx.lineTo(x, y);
+            }
+            chartCtx.stroke();
+
+            // Titik Real-Time
+            const currentBio = calculateBiomechanics(state.volume, state.color, state.sg, swayOffset);
+            const curX = padL + (state.volume / 1000) * plotW;
+            const curY = padT + plotH - ((currentBio.adcVoltage - 0.3) / 3.1) * plotH;
+
+            chartCtx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
+            chartCtx.setLineDash([3, 3]);
+            chartCtx.beginPath();
+            chartCtx.moveTo(curX, padT + plotH);
+            chartCtx.lineTo(curX, curY);
+            chartCtx.lineTo(padL, curY);
+            chartCtx.stroke();
+            chartCtx.setLineDash([]);
+
+            chartCtx.fillStyle = '#f59e0b';
+            chartCtx.beginPath();
+            chartCtx.arc(curX, curY, 6, 0, Math.PI * 2);
+            chartCtx.fill();
+            chartCtx.strokeStyle = '#ffffff';
+            chartCtx.lineWidth = 2;
+            chartCtx.stroke();
+
+            chartCtx.restore();
+        }
+
+        // =========================================================================
+        // 10. EVENT LISTENERS & LOOP ANIMASI UTAMA
+        // =========================================================================
+        document.getElementById('volumeSlider').addEventListener('input', (e) => {
+            state.volume = parseInt(e.target.value, 10);
+            markManualOverride();
+            updateUI(0);
+        });
+
+        document.getElementById('weightSlider').addEventListener('input', (e) => {
+            state.weight = parseInt(e.target.value, 10);
+            document.getElementById('weightInput').value = state.weight;
+            markManualOverride();
+            updateUI(0);
+        });
+
+        document.getElementById('weightInput').addEventListener('change', (e) => {
+            let val = parseInt(e.target.value, 10);
+            if (isNaN(val)) val = 60;
+            val = Math.max(30, Math.min(150, val));
+            state.weight = val;
+            e.target.value = val;
+            document.getElementById('weightSlider').value = val;
+            markManualOverride();
+            updateUI(0);
+        });
+
+        document.getElementById('durationSelect').addEventListener('change', (e) => {
+            state.duration = parseInt(e.target.value, 10);
+            markManualOverride();
+            updateUI(0);
+        });
+
+        document.getElementById('phSlider').addEventListener('input', (e) => {
+            state.ph = parseFloat(e.target.value);
+            markManualOverride();
+            updateUI(0);
+        });
+
+        document.getElementById('sgSlider').addEventListener('input', (e) => {
+            state.sg = parseFloat(e.target.value);
+            markManualOverride();
+            updateUI(0);
+        });
+
+        document.querySelectorAll('.turb-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.turbidity = btn.getAttribute('data-turb');
+                markManualOverride();
+                renderTurbidityButtons();
+                updateUI(0);
+            });
+        });
+
+        document.getElementById('btnKinkTube').addEventListener('click', () => {
+            state.kinked = !state.kinked;
+            updateUI(0);
+        });
+
+        document.getElementById('btnSway').addEventListener('click', () => {
+            state.swayEnabled = !state.swayEnabled;
+            document.getElementById('swayText').textContent = `Goyangan: ${state.swayEnabled ? 'ON' : 'OFF'}`;
+            document.getElementById('swayIndicator').className = state.swayEnabled
+                ? 'w-2 h-2 rounded-full bg-cyan-400 animate-ping'
+                : 'w-2 h-2 rounded-full bg-slate-500';
+        });
+
+        document.getElementById('btnAutoFill').addEventListener('click', () => {
+            state.autoFill = !state.autoFill;
+            document.getElementById('autoFillText').textContent = state.autoFill ? 'Jeda Aliran' : 'Simulasi Aliran';
+            document.getElementById('btnAutoFill').classList.toggle('bg-amber-600', state.autoFill);
+            document.getElementById('btnAutoFill').classList.toggle('bg-teal-600', !state.autoFill);
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            state.autoFill = false;
+            document.getElementById('autoFillText').textContent = 'Simulasi Aliran';
+            document.getElementById('btnAutoFill').classList.remove('bg-amber-600');
+            document.getElementById('btnAutoFill').classList.add('bg-teal-600');
+            state.volume = 0;
+            document.getElementById('volumeSlider').value = 0;
+            state.otpCode = String(Math.floor(100000 + Math.random() * 900000));
+            document.getElementById('otpCode').textContent = state.otpCode;
+            addAlarmLog('Kantong urine dikosongkan (Volume direset ke 0 mL).', 'info');
+            updateUI(0);
+        });
+
+        document.querySelectorAll('.interval-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                state.trendInterval = parseInt(btn.getAttribute('data-int'), 10);
+                document.querySelectorAll('.interval-btn').forEach(b => {
+                    b.className = b === btn
+                        ? 'interval-btn px-1.5 py-0.5 rounded bg-cyan-600 text-white'
+                        : 'interval-btn px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 hover:text-white';
+                });
+            });
+        });
+
+        document.getElementById('btnClearLog').addEventListener('click', () => {
+            state.alarmLogs = [];
+            renderAlarmLogs();
+        });
+
+        document.getElementById('viewFrontBtn').addEventListener('click', () => {
+            state.viewMode = 'both';
+            document.getElementById('viewFrontBtn').className = 'px-2.5 py-1 rounded-lg font-medium bg-cyan-600 text-white transition';
+            document.getElementById('viewBackBtn').className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition';
+        });
+
+        document.getElementById('viewBackBtn').addEventListener('click', () => {
+            state.viewMode = 'back';
+            document.getElementById('viewBackBtn').className = 'px-2.5 py-1 rounded-lg font-medium bg-cyan-600 text-white transition';
+            document.getElementById('viewFrontBtn').className = 'px-2.5 py-1 rounded-lg font-medium text-slate-400 hover:text-white transition';
+        });
+
+        const infoModal = document.getElementById('infoModal');
+        document.getElementById('btnInfoModal').addEventListener('click', () => infoModal.classList.remove('hidden'));
+        document.getElementById('closeModalBtn').addEventListener('click', () => infoModal.classList.add('hidden'));
+        infoModal.addEventListener('click', (e) => {
+            if (e.target === infoModal) infoModal.classList.add('hidden');
+        });
+
+        // Loop Animasi Utama
+        let lastFrameTime = 0;
+        let lastPacketTick = 0;
+
+        function animate(timestamp) {
+            const dt = (timestamp - lastFrameTime) / 1000 || 0.016;
+            lastFrameTime = timestamp;
+
+            state.phase += dt * 2.2;
+            const swayOffset = state.swayEnabled ? Math.sin(state.phase * 2.4) : 0;
+
+            if (state.autoFill && !state.kinked) {
+                if (state.volume < 1000) {
+                    state.volume = Math.min(1000, Math.round(state.volume + dt * 35));
+                    document.getElementById('volumeSlider').value = state.volume;
+                } else {
+                    state.autoFill = false;
+                    document.getElementById('autoFillText').textContent = 'Simulasi Aliran';
+                    document.getElementById('btnAutoFill').classList.remove('bg-amber-600');
+                    document.getElementById('btnAutoFill').classList.add('bg-teal-600');
+                }
+            }
+
+            if (timestamp - lastPacketTick > 700) {
+                state.packetCount++;
+                document.getElementById('packetCounter').textContent = `PKT #${state.packetCount}`;
+                lastPacketTick = timestamp;
+                updateUI(swayOffset);
+            } else if (state.swayEnabled || state.autoFill) {
+                updateUI(swayOffset);
+            }
+
+            drawBagCanvas(swayOffset);
+            drawTrendCanvas();
+            drawSignalCanvas(swayOffset);
+            drawChartCanvas(swayOffset);
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function () {
+            initInteractiveControls();
+            updateUI(0);
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
